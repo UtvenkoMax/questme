@@ -8,7 +8,13 @@
     "scheme": "questme",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "QuestMe використовує Face ID для безпечного входу до вашого облікового запису."
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -28,11 +34,20 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
-          }
+          "backgroundColor": "#080A0F"
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "QuestMe використовує Face ID для безпечного входу до вашого облікового запису."
+        }
+      ],
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true,
+          "faceIDPermission": "QuestMe використовує Face ID для захисту локальних даних входу."
         }
       ]
     ],
