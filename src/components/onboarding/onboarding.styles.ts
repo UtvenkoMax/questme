@@ -43,20 +43,17 @@ const thumbShadow = Platform.select<ViewStyle>({
 });
 
 export const onboardingStyles = StyleSheet.create({
-  screen: { flex: 1 },
+  screen: { flex: 1, overflow: 'hidden' },
+  slideList: {
+    ...StyleSheet.absoluteFillObject,
+  },
   slide: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
+    height: '100%',
+    overflow: 'hidden',
   },
   imageWrap: {
-    width: '100%',
-    maxWidth: 460,
-    aspectRatio: 0.9,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 46,
+    ...StyleSheet.absoluteFillObject,
   },
   illustration: { width: '100%', height: '100%' },
   panel: {

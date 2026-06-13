@@ -13,7 +13,12 @@ export function SlideItem({ item, width }: SlideItemProps) {
   return (
     <View style={[s.slide, { backgroundColor: item.bgFrom, width }]}>
       <View style={s.imageWrap}>
-        <Image source={item.image} style={s.illustration} contentFit="contain" />
+        <Image
+          source={item.image}
+          style={s.illustration}
+          contentFit="cover"
+          placeholderContentFit="cover"
+        />
       </View>
     </View>
   );

@@ -32,6 +32,7 @@ export default function OnboardingScreen() {
         ref={flatListRef}
         data={SLIDES}
         extraData={width}
+        style={s.slideList}
         getItemLayout={(_, index) => ({
           index,
           length: width,

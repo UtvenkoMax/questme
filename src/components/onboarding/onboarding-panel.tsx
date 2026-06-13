@@ -24,13 +24,15 @@ export function OnboardingPanel({
   onFallback,
 }: OnboardingPanelProps) {
   return (
-    <SafeAreaView edges={['bottom']} style={s.panel}>
-      <View style={[s.accentLine, { backgroundColor: slide.accent }]} />
+    <SafeAreaView edges={['bottom']} pointerEvents="box-none" style={s.panel}>
+      <View pointerEvents="none">
+        <View style={[s.accentLine, { backgroundColor: slide.accent }]} />
 
-      <Text style={s.title}>{slide.title}</Text>
-      <Text style={s.subtitle}>{slide.subtitle}</Text>
+        <Text style={s.title}>{slide.title}</Text>
+        <Text style={s.subtitle}>{slide.subtitle}</Text>
 
-      <SlideDots currentIndex={currentIndex} accent={slide.accent} />
+        <SlideDots currentIndex={currentIndex} accent={slide.accent} />
+      </View>
 
       {isLastSlide ? (
         <SlideToRegister
