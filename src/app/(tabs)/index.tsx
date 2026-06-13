@@ -1,16 +1,19 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, Text, View } from 'react-native';
+import { FlatList, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { QuestCard } from '@/components/home/quest-card';
 import { MOCK_QUESTS } from '@/components/home/quest.types';
 import { homeStyles as s } from '@/components/home/home.styles';
+import { getResponsiveMetrics } from '@/utils/responsive';
 
 const CHIPS = ['Всі', 'Поряд', 'Популярні', 'Нові', 'Природа', 'Місто'];
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { height, width } = useWindowDimensions();
+  const layout = useMemo(() => getResponsiveMetrics(width, height), [height, width]);
   const [activeChip, setActiveChip] = useState(0);
   const activeFilter = CHIPS[activeChip];
   const quests = useMemo(() => {
@@ -39,7 +42,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={s.screen} edges={['top']}>
-      <View style={s.header}>
+      <View style={[s.header, { paddingHorizontal: layout.gutter }, layout.isWide && s.headerWide]}>
         <View style={s.headerCopy}>
           <Text style={s.greeting}>Привіт, Мандрівнику</Text>
           <Text style={s.headerTitle}>Доступні квести</Text>
@@ -53,7 +56,11 @@ export default function HomeScreen() {
         data={CHIPS}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={s.chipList}
+        contentContainerStyle={[
+          s.chipList,
+          { paddingHorizontal: layout.gutter },
+          layout.isWide && s.chipListWide,
+        ]}
         keyExtractor={(item) => item}
         renderItem={({ item, index }) => (
           <Pressable
@@ -69,7 +76,10 @@ export default function HomeScreen() {
       />
 
       <FlatList
+        key={`quests-${layout.listColumns}`}
         data={quests}
+        numColumns={layout.listColumns}
+        columnWrapperStyle={layout.listColumns > 1 ? s.listColumn : undefined}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
           <View style={s.emptyState}>
@@ -77,13 +87,20 @@ export default function HomeScreen() {
             <Text style={s.emptyText}>Спробуйте іншу категорію або поверніться до всіх маршрутів.</Text>
           </View>
         }
-        contentContainerStyle={s.list}
+        contentContainerStyle={[
+          s.list,
+          { paddingHorizontal: layout.gutter },
+          layout.isWide && s.listWide,
+        ]}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
-          <QuestCard
-            quest={item}
-            onPress={() => router.push(`/quest/${item.id}` as any)}
-          />
+          <View style={[s.questItem, layout.listColumns > 1 && s.questItemGrid]}>
+            <QuestCard
+              compact={layout.isCompactWidth}
+              quest={item}
+              onPress={() => router.push(`/quest/${item.id}` as any)}
+            />
+          </View>
         )}
       />
     </SafeAreaView>

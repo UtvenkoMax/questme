@@ -19,10 +19,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FF',
   },
   container: {
+    alignSelf: 'center',
     flex: 1,
     gap: 10,
     justifyContent: 'center',
+    maxWidth: 560,
     padding: 24,
+    width: '100%',
   },
   eyebrow: {
     color: '#2D6A5F',

@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { useMemo } from 'react';
+import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { getResponsiveMetrics } from '@/utils/responsive';
 
 import { PinEntryPanel } from './pin-entry-panel';
 import { pinCodeStyles as styles } from './pin-code.styles';
@@ -22,7 +25,7 @@ type PinCodeScreenViewProps = {
 };
 
 export function PinCodeScreenView({
-  biometricRetryLabel = 'Спробувати біометрію ще раз',
+  biometricRetryLabel = 'РЎРїСЂРѕР±СѓРІР°С‚Рё Р±С–РѕРјРµС‚СЂС–СЋ С‰Рµ СЂР°Р·',
   cancelLabel,
   isBusy,
   message,
@@ -35,33 +38,53 @@ export function PinCodeScreenView({
   step,
   title,
 }: PinCodeScreenViewProps) {
+  const { height, width } = useWindowDimensions();
+  const layout = useMemo(() => getResponsiveMetrics(width, height), [height, width]);
   const isPinStep = step === 'verify' || step === 'create' || step === 'confirm';
+  const compact = layout.isCompactHeight || layout.isCompactWidth;
 
   return (
     <SafeAreaView style={styles.screen}>
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.message}>{message}</Text>
-          <View style={styles.dots}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingHorizontal: layout.gutter },
+          layout.isWide && styles.contentWide,
+          compact && styles.contentCompact,
+        ]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[styles.header, compact && styles.headerCompact]}>
+          <Text style={[styles.title, compact && styles.titleCompact]}>{title}</Text>
+          <Text style={[styles.message, compact && styles.messageCompact]}>{message}</Text>
+          <View style={[styles.dots, compact && styles.dotsCompact]}>
             {Array.from({ length: PIN_LENGTH }, (_, index) => (
-              <View key={index} style={[styles.dot, index < pinLength && styles.dotFilled]} />
+              <View
+                key={index}
+                style={[styles.dot, compact && styles.dotCompact, index < pinLength && styles.dotFilled]}
+              />
             ))}
           </View>
         </View>
 
         {isPinStep && (
-          <PinEntryPanel cancelLabel={cancelLabel} onCancel={onCancel} onPressDigit={onPressDigit} />
+          <PinEntryPanel
+            cancelLabel={cancelLabel}
+            compact={compact}
+            onCancel={onCancel}
+            onPressDigit={onPressDigit}
+          />
         )}
 
         {step === 'biometric' && (
           <View style={styles.actions}>
             <PrimaryButton disabled={isBusy} onPress={onRetryBiometric}>
-              {isBusy ? 'Очікуємо...' : biometricRetryLabel}
+              {isBusy ? 'РћС‡С–РєСѓС”РјРѕ...' : biometricRetryLabel}
             </PrimaryButton>
             {onSkipBiometric ? (
               <SecondaryButton disabled={isBusy} onPress={onSkipBiometric}>
-                Пропустити
+                РџСЂРѕРїСѓСЃС‚РёС‚Рё
               </SecondaryButton>
             ) : null}
           </View>
@@ -69,10 +92,10 @@ export function PinCodeScreenView({
 
         {step === 'done' && (
           <View style={styles.actions}>
-            <PrimaryButton onPress={onFinish}>Продовжити</PrimaryButton>
+            <PrimaryButton onPress={onFinish}>РџСЂРѕРґРѕРІР¶РёС‚Рё</PrimaryButton>
           </View>
         )}
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -93,7 +116,8 @@ function PrimaryButton({ children, disabled = false, onPress }: PrimaryButtonPro
         styles.primaryButton,
         disabled && styles.buttonDisabled,
         pressed && !disabled && styles.buttonPressed,
-      ]}>
+      ]}
+    >
       <Text style={styles.primaryButtonText}>{children}</Text>
     </Pressable>
   );
@@ -109,7 +133,8 @@ function SecondaryButton({ children, disabled = false, onPress }: PrimaryButtonP
         styles.secondaryButton,
         disabled && styles.secondaryButtonDisabled,
         pressed && !disabled && styles.buttonPressed,
-      ]}>
+      ]}
+    >
       <Text style={styles.secondaryButtonText}>{children}</Text>
     </Pressable>
   );

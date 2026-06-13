@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -6,10 +7,12 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { PasswordStrength, RegistrationErrors } from '@/services/auth-service';
+import { getResponsiveMetrics } from '@/utils/responsive';
 
 import { registerStyles as styles } from './register-screen.styles';
 
@@ -48,23 +51,36 @@ export function RegisterScreenView({
   showPassword,
   submitError,
 }: RegisterScreenViewProps) {
+  const { height, width } = useWindowDimensions();
+  const layout = useMemo(() => getResponsiveMetrics(width, height), [height, width]);
+  const compact = layout.isCompactHeight || layout.isCompactWidth;
+
   return (
     <SafeAreaView style={styles.screen}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.keyboardView}>
+        style={styles.keyboardView}
+      >
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[
+            styles.content,
+            { paddingHorizontal: layout.gutter },
+            layout.isWide && styles.contentWide,
+            compact && styles.contentCompact,
+          ]}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+        >
           <Pressable onPress={onBack} style={styles.backButton}>
-            <Text style={styles.backButtonText}>Назад</Text>
+            <Text style={styles.backButtonText}>РќР°Р·Р°Рґ</Text>
           </Pressable>
 
-          <View style={styles.header}>
+          <View style={[styles.header, compact && styles.headerCompact]}>
             <Text style={styles.eyebrow}>QuestMe</Text>
-            <Text style={styles.title}>Реєстрація</Text>
-            <Text style={styles.subtitle}>Створіть профіль, щоб продовжити.</Text>
+            <Text style={[styles.title, compact && styles.titleCompact]}>Р РµС”СЃС‚СЂР°С†С–СЏ</Text>
+            <Text style={[styles.subtitle, compact && styles.subtitleCompact]}>
+              РЎС‚РІРѕСЂС–С‚СЊ РїСЂРѕС„С–Р»СЊ, С‰РѕР± РїСЂРѕРґРѕРІР¶РёС‚Рё.
+            </Text>
           </View>
 
           <View style={styles.form}>
@@ -72,9 +88,9 @@ export function RegisterScreenView({
               autoCapitalize="words"
               autoComplete="name"
               error={errors.name}
-              label="Ім'я"
+              label="Р†Рј'СЏ"
               onChangeText={onChangeName}
-              placeholder="Ваше ім'я"
+              placeholder="Р’Р°С€Рµ С–Рј'СЏ"
               textContentType="name"
               value={name}
             />
@@ -94,16 +110,17 @@ export function RegisterScreenView({
               autoCapitalize="none"
               autoComplete="new-password"
               error={errors.password}
-              label="Пароль"
+              label="РџР°СЂРѕР»СЊ"
               onChangeText={onChangePassword}
-              placeholder="Мінімум 6 символів"
+              placeholder="РњС–РЅС–РјСѓРј 6 СЃРёРјРІРѕР»С–РІ"
               rightAction={
                 <Pressable
-                  accessibilityLabel={showPassword ? 'Приховати пароль' : 'Показати пароль'}
+                  accessibilityLabel={showPassword ? 'РџСЂРёС…РѕРІР°С‚Рё РїР°СЂРѕР»СЊ' : 'РџРѕРєР°Р·Р°С‚Рё РїР°СЂРѕР»СЊ'}
                   accessibilityRole="button"
                   onPress={onTogglePasswordVisibility}
-                  style={({ pressed }) => [styles.inlineButton, pressed && styles.inlineButtonPressed]}>
-                  <Text style={styles.inlineButtonText}>{showPassword ? 'Приховати' : 'Показати'}</Text>
+                  style={({ pressed }) => [styles.inlineButton, pressed && styles.inlineButtonPressed]}
+                >
+                  <Text style={styles.inlineButtonText}>{showPassword ? 'РџСЂРёС…РѕРІР°С‚Рё' : 'РџРѕРєР°Р·Р°С‚Рё'}</Text>
                 </Pressable>
               }
               secureTextEntry={!showPassword}
@@ -136,9 +153,10 @@ export function RegisterScreenView({
                 styles.submitButton,
                 !canSubmit && styles.submitButtonDisabled,
                 pressed && canSubmit && styles.submitButtonPressed,
-              ]}>
+              ]}
+            >
               <Text style={styles.submitButtonText}>
-                {isSubmitting ? 'Зберігаємо...' : 'Зареєструватися'}
+                {isSubmitting ? 'Р—Р±РµСЂС–РіР°С”РјРѕ...' : 'Р—Р°СЂРµС”СЃС‚СЂСѓРІР°С‚РёСЃСЏ'}
               </Text>
             </Pressable>
           </View>

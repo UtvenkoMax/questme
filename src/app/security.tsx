@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { authenticateWithBiometrics } from '@/components/auth/biometric-auth';
@@ -12,9 +12,12 @@ import {
   setBiometricEnabled as saveBiometricPreference,
   type UserProfile,
 } from '@/services/auth-service';
+import { getResponsiveMetrics } from '@/utils/responsive';
 
 export default function SecurityScreen() {
   const router = useRouter();
+  const { height, width } = useWindowDimensions();
+  const layout = useMemo(() => getResponsiveMetrics(width, height), [height, width]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [biometricEnabled, setBiometricEnabledState] = useState(false);
   const [message, setMessage] = useState('');
@@ -92,10 +95,19 @@ export default function SecurityScreen() {
       ]
     );
   };
+  const compact = layout.isCompactHeight || layout.isCompactWidth;
 
   return (
     <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingHorizontal: layout.gutter },
+          layout.isWide && styles.contentWide,
+          compact && styles.contentCompact,
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         <Pressable
           accessibilityRole="button"
           onPress={() => router.back()}
@@ -189,6 +201,15 @@ const styles = StyleSheet.create({
     gap: 22,
     paddingHorizontal: 24,
     paddingVertical: 28,
+  },
+  contentWide: {
+    alignSelf: 'center',
+    maxWidth: 620,
+    width: '100%',
+  },
+  contentCompact: {
+    gap: 18,
+    paddingVertical: 18,
   },
   backButton: {
     alignSelf: 'flex-start',

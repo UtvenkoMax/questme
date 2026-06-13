@@ -25,6 +25,7 @@ export const cardStyles = StyleSheet.create({
     opacity: 0.95,
   },
   imageContainer: { height: 180, position: 'relative' },
+  imageContainerCompact: { height: 154 },
   image: { width: '100%', height: '100%' },
   imageOverlay: {
     position: 'absolute',
@@ -53,7 +54,9 @@ export const cardStyles = StyleSheet.create({
   difficultyDot: { width: 7, height: 7, borderRadius: 3.5 },
   difficultyText: { fontSize: 11, fontWeight: '700' },
   content: { padding: 16, gap: 12 },
+  contentCompact: { padding: 14, gap: 10 },
   title: { fontSize: 18, fontWeight: '800', color: '#111827', letterSpacing: 0, lineHeight: 23 },
+  titleCompact: { fontSize: 16, lineHeight: 21 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1, minWidth: 0 },
   metaIcon: { fontSize: 13 },

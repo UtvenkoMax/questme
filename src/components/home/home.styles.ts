@@ -23,6 +23,11 @@ export const homeStyles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 16,
   },
+  headerWide: {
+    alignSelf: 'center',
+    maxWidth: 1080,
+    width: '100%',
+  },
   headerCopy: {
     flex: 1,
     gap: 3,
@@ -38,6 +43,11 @@ export const homeStyles = StyleSheet.create({
   },
   searchIcon: { fontSize: 20 },
   chipList: { paddingHorizontal: 20, gap: 8, paddingBottom: 16 },
+  chipListWide: {
+    alignSelf: 'center',
+    maxWidth: 1080,
+    width: '100%',
+  },
   chip: {
     paddingHorizontal: 16, paddingVertical: 8,
     borderRadius: 20, backgroundColor: '#FFFFFF',
@@ -49,6 +59,14 @@ export const homeStyles = StyleSheet.create({
   chipText: { fontSize: 13, fontWeight: '600', color: '#6B7280' },
   chipTextActive: { color: '#FFFFFF' },
   list: { paddingHorizontal: 20, paddingBottom: 32, gap: 16, flexGrow: 1 },
+  listWide: {
+    alignSelf: 'center',
+    maxWidth: 1080,
+    width: '100%',
+  },
+  listColumn: { gap: 16 },
+  questItem: { width: '100%' },
+  questItemGrid: { flex: 1, minWidth: 0 },
   emptyState: {
     alignItems: 'center',
     backgroundColor: '#FFFFFF',

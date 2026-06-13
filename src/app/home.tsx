@@ -1,13 +1,16 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getUserProfile, type UserProfile } from '@/services/auth-service';
 import { createQuest, getQuestProgress, getQuests, toggleQuest, type Quest } from '@/services/quest-service';
+import { getResponsiveMetrics } from '@/utils/responsive';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { height, width } = useWindowDimensions();
+  const layout = useMemo(() => getResponsiveMetrics(width, height), [height, width]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [quests, setQuests] = useState<Quest[]>([]);
   const [title, setTitle] = useState('');
@@ -36,6 +39,7 @@ export default function HomeScreen() {
   );
 
   const progress = getQuestProgress(quests);
+  const compact = layout.isCompactHeight || layout.isCompactWidth;
 
   const submitQuest = async () => {
     if (title.trim().length < 3) {
@@ -59,7 +63,15 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingHorizontal: layout.gutter },
+          layout.isWide && styles.contentWide,
+          compact && styles.contentCompact,
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.topBar}>
           <View>
             <Text style={styles.eyebrow}>QuestMe</Text>
@@ -171,9 +183,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 24,
   },
+  contentWide: {
+    alignSelf: 'center',
+    maxWidth: 720,
+    width: '100%',
+  },
+  contentCompact: {
+    gap: 18,
+    paddingVertical: 18,
+  },
   topBar: {
     alignItems: 'center',
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
     justifyContent: 'space-between',
   },

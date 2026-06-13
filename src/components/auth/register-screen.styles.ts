@@ -14,6 +14,15 @@ export const registerStyles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 28,
   },
+  contentWide: {
+    alignSelf: 'center',
+    maxWidth: 560,
+    width: '100%',
+  },
+  contentCompact: {
+    justifyContent: 'flex-start',
+    paddingVertical: 18,
+  },
   backButton: {
     alignSelf: 'flex-start',
     marginBottom: 28,
@@ -28,6 +37,9 @@ export const registerStyles = StyleSheet.create({
     gap: 10,
     marginBottom: 34,
   },
+  headerCompact: {
+    marginBottom: 22,
+  },
   eyebrow: {
     color: '#2D6A5F',
     fontSize: 15,
@@ -39,10 +51,18 @@ export const registerStyles = StyleSheet.create({
     fontSize: 40,
     fontWeight: '800',
   },
+  titleCompact: {
+    fontSize: 32,
+    lineHeight: 38,
+  },
   subtitle: {
     color: '#59616F',
     fontSize: 17,
     lineHeight: 24,
+  },
+  subtitleCompact: {
+    fontSize: 15,
+    lineHeight: 21,
   },
   form: {
     gap: 18,

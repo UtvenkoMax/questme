@@ -69,6 +69,11 @@ export const onboardingStyles = StyleSheet.create({
     paddingBottom: 8,
     ...panelShadow,
   },
+  panelCompact: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 16,
+  },
   accentLine: { width: 48, height: 4, borderRadius: 2, marginBottom: 20 },
   title: {
     fontSize: 28,
@@ -77,11 +82,21 @@ export const onboardingStyles = StyleSheet.create({
     marginBottom: 10,
     letterSpacing: 0,
   },
+  titleCompact: {
+    fontSize: 23,
+    lineHeight: 29,
+    marginBottom: 7,
+  },
   subtitle: {
     fontSize: 15,
     lineHeight: 22,
     color: '#6B7280',
     marginBottom: 24,
+  },
+  subtitleCompact: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 16,
   },
   dots: { flexDirection: 'row', gap: 8, marginBottom: 24 },
   dot: { height: 8, borderRadius: 4 },
@@ -93,6 +108,9 @@ export const onboardingStyles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
     ...buttonShadow,
+  },
+  nextButtonCompact: {
+    paddingVertical: 14,
   },
   nextButtonPressed: { opacity: 0.88, transform: [{ scale: 0.98 }] },
   nextButtonText: { color: '#FFFFFF', fontSize: 18, fontWeight: '700', letterSpacing: 0 },

@@ -1,17 +1,19 @@
 import { useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { FlatList, View, useWindowDimensions } from 'react-native';
 
 import { OnboardingPanel } from '@/components/onboarding/onboarding-panel';
 import { SlideItem } from '@/components/onboarding/slide-item';
 import { SLIDES } from '@/components/onboarding/slides-data';
 import { onboardingStyles as s } from '@/components/onboarding/onboarding.styles';
+import { getResponsiveMetrics } from '@/utils/responsive';
 
 export default function OnboardingScreen() {
   const router = useRouter();
   const flatListRef = useRef<FlatList>(null);
-  const { width } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const layout = useMemo(() => getResponsiveMetrics(width, height), [height, width]);
 
   const isLastSlide = currentIndex === SLIDES.length - 1;
   const currentSlide = SLIDES[currentIndex];
@@ -56,6 +58,8 @@ export default function OnboardingScreen() {
         onNext={goToNext}
         onComplete={handleComplete}
         onFallback={handleFallback}
+        layout={layout}
+        screenWidth={width}
       />
     </View>
   );

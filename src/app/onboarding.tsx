@@ -67,10 +67,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#F4F0EA',
   },
   content: {
+    alignSelf: 'center',
     flex: 1,
     justifyContent: 'space-between',
+    maxWidth: 620,
     paddingHorizontal: 24,
     paddingVertical: 28,
+    width: '100%',
   },
   header: {
     gap: 12,
@@ -84,9 +87,9 @@ const styles = StyleSheet.create({
   },
   title: {
     color: '#171B22',
-    fontSize: 38,
+    fontSize: 34,
     fontWeight: '800',
-    lineHeight: 44,
+    lineHeight: 40,
   },
   subtitle: {
     color: '#59616F',

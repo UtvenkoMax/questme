@@ -6,11 +6,12 @@ import { cardStyles } from './quest-card.styles';
 import { StarRating } from './star-rating';
 
 type QuestCardProps = {
+  compact?: boolean;
   quest: Quest;
   onPress: () => void;
 };
 
-export function QuestCard({ quest, onPress }: QuestCardProps) {
+export function QuestCard({ compact = false, quest, onPress }: QuestCardProps) {
   const diffColor = DIFFICULTY_COLORS[quest.difficulty];
 
   return (
@@ -21,7 +22,7 @@ export function QuestCard({ quest, onPress }: QuestCardProps) {
       onPress={onPress}
       style={({ pressed }) => [cardStyles.card, pressed && cardStyles.cardPressed]}
     >
-      <View style={cardStyles.imageContainer}>
+      <View style={[cardStyles.imageContainer, compact && cardStyles.imageContainerCompact]}>
         <Image source={quest.image} style={cardStyles.image} contentFit="cover" />
 
         <View style={cardStyles.imageOverlay}>
@@ -44,8 +45,8 @@ export function QuestCard({ quest, onPress }: QuestCardProps) {
         </View>
       </View>
 
-      <View style={cardStyles.content}>
-        <Text style={cardStyles.title} numberOfLines={2}>{quest.title}</Text>
+      <View style={[cardStyles.content, compact && cardStyles.contentCompact]}>
+        <Text style={[cardStyles.title, compact && cardStyles.titleCompact]} numberOfLines={2}>{quest.title}</Text>
 
         <View style={cardStyles.metaRow}>
           <View style={cardStyles.metaItem}>

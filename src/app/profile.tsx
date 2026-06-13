@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -10,6 +10,7 @@ import {
   validateProfile,
   type UserProfile,
 } from '@/services/auth-service';
+import { getResponsiveMetrics } from '@/utils/responsive';
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('uk-UA', {
@@ -21,6 +22,8 @@ function formatDate(value: string) {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { height, width } = useWindowDimensions();
+  const layout = useMemo(() => getResponsiveMetrics(width, height), [height, width]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -54,6 +57,7 @@ export default function ProfileScreen() {
 
   const errors = useMemo(() => validateProfile({ email, name }), [email, name]);
   const canSave = !hasProfileErrors(errors) && !isSaving;
+  const compact = layout.isCompactHeight || layout.isCompactWidth;
 
   const saveProfile = async () => {
     if (!canSave) return;
@@ -73,7 +77,15 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingHorizontal: layout.gutter },
+          layout.isWide && styles.contentWide,
+          compact && styles.contentCompact,
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
         <Pressable
           accessibilityRole="button"
           onPress={() => router.back()}
@@ -170,6 +182,15 @@ const styles = StyleSheet.create({
     gap: 24,
     paddingHorizontal: 24,
     paddingVertical: 28,
+  },
+  contentWide: {
+    alignSelf: 'center',
+    maxWidth: 620,
+    width: '100%',
+  },
+  contentCompact: {
+    gap: 18,
+    paddingVertical: 18,
   },
   backButton: {
     alignSelf: 'flex-start',

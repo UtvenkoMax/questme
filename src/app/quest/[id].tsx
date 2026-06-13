@@ -1,9 +1,11 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMemo } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DIFFICULTY_COLORS, MOCK_QUESTS } from '@/components/home/quest.types';
+import { getResponsiveMetrics } from '@/utils/responsive';
 
 const QUEST_DESCRIPTIONS: Record<string, string> = {
   '1': 'Маршрут історичними вулицями з короткими завданнями на уважність. Підійде для прогулянки після роботи або вихідного дня.',
@@ -18,8 +20,11 @@ function getQuestId(id: string | string[] | undefined) {
 export default function QuestDetailsScreen() {
   const { id } = useLocalSearchParams<{ id?: string | string[] }>();
   const router = useRouter();
+  const { height, width } = useWindowDimensions();
+  const layout = useMemo(() => getResponsiveMetrics(width, height), [height, width]);
   const questId = getQuestId(id);
   const quest = MOCK_QUESTS.find((item) => item.id === questId);
+  const compact = layout.isCompactHeight || layout.isCompactWidth;
 
   if (!quest) {
     return (
@@ -42,8 +47,15 @@ export default function QuestDetailsScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.hero}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          layout.isWide && styles.contentWide,
+          compact && styles.contentCompact,
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[styles.hero, layout.isWide && styles.heroWide, compact && styles.heroCompact]}>
           <Image source={quest.image} style={styles.heroImage} contentFit="cover" />
           <View style={styles.heroShade} />
           <Pressable
@@ -68,11 +80,11 @@ export default function QuestDetailsScreen() {
         </View>
 
         <View style={styles.header}>
-          <Text style={styles.title}>{quest.title}</Text>
-          <Text style={styles.subtitle}>{QUEST_DESCRIPTIONS[quest.id]}</Text>
+          <Text style={[styles.title, compact && styles.titleCompact]}>{quest.title}</Text>
+          <Text style={[styles.subtitle, compact && styles.subtitleCompact]}>{QUEST_DESCRIPTIONS[quest.id]}</Text>
         </View>
 
-        <View style={styles.statsRow}>
+        <View style={[styles.statsRow, compact && styles.statsRowCompact]}>
           <Stat label="Тривалість" value={quest.duration} />
           <Stat label="Відстань" value={quest.distance} />
           <Stat label="Рейтинг" value={quest.rating.toFixed(1)} />
@@ -136,9 +148,26 @@ const styles = StyleSheet.create({
     gap: 22,
     paddingBottom: 30,
   },
+  contentWide: {
+    alignSelf: 'center',
+    maxWidth: 760,
+    width: '100%',
+  },
+  contentCompact: {
+    gap: 18,
+    paddingBottom: 22,
+  },
   hero: {
     height: 310,
     overflow: 'hidden',
+  },
+  heroWide: {
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    marginTop: 12,
+  },
+  heroCompact: {
+    height: 240,
   },
   heroImage: {
     height: '100%',
@@ -213,15 +242,26 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     lineHeight: 38,
   },
+  titleCompact: {
+    fontSize: 26,
+    lineHeight: 32,
+  },
   subtitle: {
     color: '#4B5563',
     fontSize: 16,
     lineHeight: 24,
   },
+  subtitleCompact: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
   statsRow: {
     flexDirection: 'row',
     gap: 10,
     paddingHorizontal: 20,
+  },
+  statsRowCompact: {
+    flexDirection: 'column',
   },
   stat: {
     backgroundColor: '#FFFFFF',
