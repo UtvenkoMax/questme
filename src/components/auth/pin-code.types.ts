@@ -6,4 +6,4 @@ export const PIN_DIGIT_ROWS = [
   ['7', '8', '9'],
 ];
 
-export type PinCodeStep = 'create' | 'confirm' | 'biometric' | 'done';
+export type PinCodeStep = 'verify' | 'create' | 'confirm' | 'biometric' | 'done';

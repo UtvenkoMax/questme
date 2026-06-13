@@ -92,7 +92,11 @@ export function SlideToRegister() {
   };
 
   return (
-    <View accessibilityRole="button" style={styles.trackWrap}>
+    <View
+      accessibilityHint="Проведіть вправо або скористайтесь кнопкою створення профілю нижче."
+      accessibilityLabel="Провести для реєстрації"
+      accessibilityRole="button"
+      style={styles.trackWrap}>
       <View {...panResponder.panHandlers} onLayout={handleLayout} style={styles.track}>
         <Animated.View style={[styles.trackFill, { width: fillWidth }]} />
         <Text style={styles.trackText}>Проведіть для реєстрації</Text>

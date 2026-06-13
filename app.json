@@ -49,7 +49,14 @@
           "configureAndroidBackup": true,
           "faceIDPermission": "QuestMe використовує Face ID для захисту локальних даних входу."
         }
-      ]
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "QuestMe використовує геолокацію для відображення квестів поблизу."
+        }
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,

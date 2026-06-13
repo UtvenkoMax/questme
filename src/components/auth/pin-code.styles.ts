@@ -140,4 +140,20 @@ export const pinCodeStyles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '800',
   },
+  secondaryButton: {
+    minHeight: 54,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderColor: '#2D6A5F',
+    borderWidth: 1.5,
+  },
+  secondaryButtonDisabled: {
+    borderColor: '#9BA29B',
+  },
+  secondaryButtonText: {
+    color: '#2D6A5F',
+    fontSize: 16,
+    fontWeight: '800',
+  },
 });

@@ -14,6 +14,7 @@ export const startScreenStyles = StyleSheet.create({
   sliderPanel: {
     backgroundColor: 'rgba(8, 10, 15, 0.68)',
     borderRadius: 28,
+    gap: 10,
     padding: 10,
   },
   trackWrap: {
@@ -57,5 +58,21 @@ export const startScreenStyles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '800',
     lineHeight: 30,
+  },
+  startButton: {
+    alignItems: 'center',
+    borderColor: 'rgba(255, 255, 255, 0.46)',
+    borderRadius: 18,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 52,
+  },
+  startButtonPressed: {
+    opacity: 0.72,
+  },
+  startButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
   },
 });

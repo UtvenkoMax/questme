@@ -50,10 +50,27 @@ export const registerStyles = StyleSheet.create({
   field: {
     gap: 8,
   },
+  fieldHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   label: {
     color: '#242A33',
     fontSize: 15,
     fontWeight: '700',
+  },
+  inlineButton: {
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
+  inlineButtonPressed: {
+    opacity: 0.65,
+  },
+  inlineButtonText: {
+    color: '#2D6A5F',
+    fontSize: 14,
+    fontWeight: '800',
   },
   input: {
     minHeight: 56,
@@ -64,6 +81,43 @@ export const registerStyles = StyleSheet.create({
     color: '#171B22',
     fontSize: 17,
     paddingHorizontal: 16,
+  },
+  inputError: {
+    borderColor: '#C44949',
+  },
+  errorText: {
+    color: '#B33A3A',
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  passwordStrength: {
+    gap: 8,
+    marginTop: -6,
+  },
+  strengthBars: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  strengthBar: {
+    backgroundColor: '#D6D0C8',
+    borderRadius: 999,
+    flex: 1,
+    height: 6,
+  },
+  strengthBarActive: {
+    backgroundColor: '#2D6A5F',
+  },
+  helperText: {
+    color: '#59616F',
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  submitError: {
+    color: '#B33A3A',
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 20,
+    textAlign: 'center',
   },
   submitButton: {
     minHeight: 58,

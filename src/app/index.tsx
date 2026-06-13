@@ -1,40 +1,61 @@
-import { Image } from 'expo-image';
-import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { useRef, useState } from 'react';
+import { FlatList, View, useWindowDimensions } from 'react-native';
 
-import { SlideToRegister } from '@/components/auth/slide-to-register';
-import { startScreenStyles as styles } from '@/components/auth/start-screen.styles';
+import { OnboardingPanel } from '@/components/onboarding/onboarding-panel';
+import { SlideItem } from '@/components/onboarding/slide-item';
+import { SLIDES } from '@/components/onboarding/slides-data';
+import { onboardingStyles as s } from '@/components/onboarding/onboarding.styles';
 
-export default function StartScreen() {
-  const [showSlider, setShowSlider] = useState(false);
+export default function OnboardingScreen() {
+  const router = useRouter();
+  const flatListRef = useRef<FlatList>(null);
+  const { width } = useWindowDimensions();
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowSlider(true);
-    }, 2000);
+  const isLastSlide = currentIndex === SLIDES.length - 1;
+  const currentSlide = SLIDES[currentIndex];
 
-    return () => {
-      clearTimeout(timer);
-    };
-  }, []);
+  const goToNext = () => {
+    if (currentIndex < SLIDES.length - 1) {
+      flatListRef.current?.scrollToIndex({ index: currentIndex + 1, animated: true });
+      setCurrentIndex(currentIndex + 1);
+    }
+  };
+
+  const handleComplete = () => router.push('/register');
+  const handleFallback = () => router.push('/register');
 
   return (
-    <View style={styles.screen}>
-      <Image
-        accessibilityLabel="Стартове зображення QuestMe"
-        contentFit="cover"
-        source={require('@/assets/images/startimage.png')}
-        style={StyleSheet.absoluteFill}
+    <View style={[s.screen, { backgroundColor: currentSlide.bgFrom }]}>
+      <FlatList
+        ref={flatListRef}
+        data={SLIDES}
+        extraData={width}
+        getItemLayout={(_, index) => ({
+          index,
+          length: width,
+          offset: width * index,
+        })}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        keyExtractor={(item) => item.id}
+        onMomentumScrollEnd={(e) => {
+          const idx = Math.round(e.nativeEvent.contentOffset.x / width);
+          setCurrentIndex(Math.min(Math.max(idx, 0), SLIDES.length - 1));
+        }}
+        renderItem={({ item }) => <SlideItem item={item} width={width} />}
       />
 
-      <SafeAreaView style={styles.safeArea}>
-        {showSlider && (
-          <View style={styles.sliderPanel}>
-            <SlideToRegister />
-          </View>
-        )}
-      </SafeAreaView>
+      <OnboardingPanel
+        slide={currentSlide}
+        currentIndex={currentIndex}
+        isLastSlide={isLastSlide}
+        onNext={goToNext}
+        onComplete={handleComplete}
+        onFallback={handleFallback}
+      />
     </View>
   );
 }

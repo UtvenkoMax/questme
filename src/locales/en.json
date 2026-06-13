@@ -1,0 +1,15 @@
+{
+  "tabs": {
+    "home": "Quests",
+    "map": "Map",
+    "profile": "Profile"
+  },
+  "home": {
+    "title": "Available Quests",
+    "noQuests": "No quests found nearby"
+  },
+  "profile": {
+    "title": "My Profile",
+    "settings": "Settings"
+  }
+}

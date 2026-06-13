@@ -4,11 +4,12 @@ import { PIN_DIGIT_ROWS } from './pin-code.types';
 import { pinCodeStyles as styles } from './pin-code.styles';
 
 type PinEntryPanelProps = {
+  cancelLabel?: string;
   onCancel: () => void;
   onPressDigit: (digit: string) => void;
 };
 
-export function PinEntryPanel({ onCancel, onPressDigit }: PinEntryPanelProps) {
+export function PinEntryPanel({ cancelLabel = 'Очистити', onCancel, onPressDigit }: PinEntryPanelProps) {
   return (
     <View style={styles.pinPanel}>
       <View style={styles.keypad}>
@@ -24,9 +25,11 @@ export function PinEntryPanel({ onCancel, onPressDigit }: PinEntryPanelProps) {
           <View style={styles.bottomSpacer} />
           <DigitKey digit="0" onPress={onPressDigit} />
           <Pressable
+            accessibilityLabel={cancelLabel}
+            accessibilityRole="button"
             onPress={onCancel}
             style={({ pressed }) => [styles.cancelButton, pressed && styles.cancelButtonPressed]}>
-            <Text style={styles.cancelText}>Cancel</Text>
+            <Text style={styles.cancelText}>{cancelLabel}</Text>
           </Pressable>
         </View>
       </View>
@@ -42,6 +45,8 @@ type DigitKeyProps = {
 function DigitKey({ digit, onPress }: DigitKeyProps) {
   return (
     <Pressable
+      accessibilityLabel={`Цифра ${digit}`}
+      accessibilityRole="button"
       onPress={() => onPress(digit)}
       style={({ pressed }) => [styles.key, pressed && styles.keyPressed]}>
       <Text style={styles.keyText}>{digit}</Text>
