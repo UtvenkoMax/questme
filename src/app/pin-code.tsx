@@ -1,9 +1,19 @@
 import * as LocalAuthentication from 'expo-local-authentication';
-import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 
-import { BIOMETRIC_ENABLED_KEY, FACE_ID_ENABLED_KEY, getBiometricName, getExpoGoFaceIdMessage, getFaceIdSetupMessage, isExpoGoOnIos, isIphone, supportsFaceId } from '@/components/auth/biometric-auth';
+import { setAuthItem } from '@/components/auth/auth-storage';
+import {
+  BIOMETRIC_ENABLED_KEY,
+  FACE_ID_ENABLED_KEY,
+  PIN_KEY,
+  getBiometricName,
+  getExpoGoFaceIdMessage,
+  getFaceIdSetupMessage,
+  isExpoGoOnIos,
+  isIphone,
+  supportsFaceId,
+} from '@/components/auth/biometric-auth';
 import { PinCodeScreenView } from '@/components/auth/pin-code-screen-view';
 import { PIN_LENGTH, type PinCodeStep } from '@/components/auth/pin-code.types';
 
@@ -56,15 +66,15 @@ export default function PinCodeScreen() {
       });
 
       if (result.success) {
-        const writes = [SecureStore.setItemAsync(BIOMETRIC_ENABLED_KEY, 'true')];
-        if (isIphone() && supportsFaceId(supportedTypes)) writes.push(SecureStore.setItemAsync(FACE_ID_ENABLED_KEY, 'true'));
+        const writes = [setAuthItem(BIOMETRIC_ENABLED_KEY, 'true')];
+        if (isIphone() && supportsFaceId(supportedTypes)) writes.push(setAuthItem(FACE_ID_ENABLED_KEY, 'true'));
         await Promise.all(writes);
         setStep('done');
         setMessage(`${biometricName} увімкнено для входу в QuestMe.`);
         return;
       }
 
-      await SecureStore.setItemAsync(BIOMETRIC_ENABLED_KEY, 'false');
+      await setAuthItem(BIOMETRIC_ENABLED_KEY, 'false');
       setMessage(`${biometricName} не підтверджено. Спробуйте ще раз.`);
     } finally {
       setIsBusy(false);
@@ -91,9 +101,7 @@ export default function PinCodeScreen() {
 
       setIsBusy(true);
       try {
-        await SecureStore.setItemAsync('questme.pin', nextPin, {
-          keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-        });
+        await setAuthItem(PIN_KEY, nextPin);
         setPin('');
         setStep('biometric');
         setMessage('PIN-код збережено. Налаштуйте біометричний вхід для швидкої авторизації.');

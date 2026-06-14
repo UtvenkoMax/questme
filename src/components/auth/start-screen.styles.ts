@@ -58,4 +58,49 @@ export const startScreenStyles = StyleSheet.create({
     fontWeight: '800',
     lineHeight: 30,
   },
+  loginPanel: {
+    gap: 10,
+  },
+  sessionHeader: {
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 8,
+  },
+  sessionEyebrow: {
+    color: '#F7F1E5',
+    fontSize: 13,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  sessionName: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '800',
+    maxWidth: '100%',
+  },
+  loginButton: {
+    minHeight: 58,
+    borderRadius: 29,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F7F1E5',
+  },
+  loginButtonPressed: {
+    opacity: 0.86,
+  },
+  loginButtonText: {
+    color: '#121620',
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  createProfileButton: {
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  createProfileText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+  },
 });

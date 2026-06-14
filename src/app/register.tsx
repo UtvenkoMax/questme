@@ -1,7 +1,14 @@
-import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 
+import {
+  REGISTRATION_KEY,
+  SESSION_KEY,
+  normalizeEmail,
+  setAuthItem,
+  type RegistrationRecord,
+  type SessionRecord,
+} from '@/components/auth/auth-storage';
 import { RegisterScreenView } from '@/components/auth/register-screen-view';
 
 export default function RegisterScreen() {
@@ -21,14 +28,23 @@ export default function RegisterScreen() {
 
     setIsSubmitting(true);
     try {
-      await SecureStore.setItemAsync(
-        'questme.registration',
-        JSON.stringify({
-          name: name.trim(),
-          email: email.trim().toLowerCase(),
-          createdAt: new Date().toISOString(),
-        })
-      );
+      const createdAt = new Date().toISOString();
+      const registration: RegistrationRecord = {
+        name: name.trim(),
+        email: normalizeEmail(email),
+        password,
+        createdAt,
+      };
+      const session: SessionRecord = {
+        name: registration.name,
+        email: registration.email,
+        loggedInAt: createdAt,
+      };
+
+      await Promise.all([
+        setAuthItem(REGISTRATION_KEY, JSON.stringify(registration)),
+        setAuthItem(SESSION_KEY, JSON.stringify(session)),
+      ]);
       router.push('/pin-code');
     } finally {
       setIsSubmitting(false);
