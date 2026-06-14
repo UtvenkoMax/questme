@@ -79,7 +79,7 @@ export function FaceIdStartupPrompt() {
   }, []);
 
   const maybePromptForFaceId = useCallback(async () => {
-    const canPromptOnRoute = pathname === '/home' || pathname === '/profile' || pathname === '/security';
+    const canPromptOnRoute = pathname === '/quests' || pathname === '/profile' || pathname === '/security';
     if (!canPromptOnRoute) return;
     if (!isIphone() || promptInFlight.current) return;
 

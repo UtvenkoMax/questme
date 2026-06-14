@@ -1,49 +1,32 @@
 import { Platform, StyleSheet, type ViewStyle } from 'react-native';
 
-export const THUMB_SIZE = 60;
+import { colors, radii, shadows, spacing } from '@/theme';
+
+type ShadowStyle = ViewStyle & {
+  boxShadow?: string;
+};
+
+export const THUMB_SIZE = 58;
 export const TRACK_PADDING = 4;
 
-const panelShadow = Platform.select<ViewStyle>({
-  default: {
-    elevation: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-  },
+const thumbShadow = Platform.select<ShadowStyle>({
+  android: { elevation: 4 },
   web: {
-    boxShadow: '0px -8px 20px rgba(0, 0, 0, 0.08)',
+    boxShadow: '0px 4px 10px rgba(16, 24, 32, 0.18)',
   },
-});
-
-const buttonShadow = Platform.select<ViewStyle>({
   default: {
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-  },
-  web: {
-    boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
-  },
-});
-
-const thumbShadow = Platform.select<ViewStyle>({
-  default: {
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-  },
-  web: {
-    boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.25)',
+    shadowColor: '#101820',
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
   },
 });
 
 export const onboardingStyles = StyleSheet.create({
-  screen: { flex: 1, overflow: 'hidden' },
+  screen: {
+    flex: 1,
+    overflow: 'hidden',
+  },
   slideList: {
     ...StyleSheet.absoluteFillObject,
   },
@@ -55,100 +38,144 @@ export const onboardingStyles = StyleSheet.create({
   imageWrap: {
     ...StyleSheet.absoluteFillObject,
   },
-  illustration: { width: '100%', height: '100%' },
+  illustration: {
+    height: '100%',
+    width: '100%',
+  },
   panel: {
-    position: 'absolute',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderWidth: 1,
     bottom: 0,
+    gap: spacing.lg,
     left: 0,
+    paddingBottom: spacing.sm,
+    paddingTop: spacing.xl,
+    position: 'absolute',
     right: 0,
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 36,
-    borderTopRightRadius: 36,
-    paddingHorizontal: 28,
-    paddingTop: 24,
-    paddingBottom: 8,
-    ...panelShadow,
+    ...shadows.floating,
   },
   panelCompact: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    gap: spacing.md,
+    paddingTop: spacing.lg,
   },
-  accentLine: { width: 48, height: 4, borderRadius: 2, marginBottom: 20 },
+  accentLine: {
+    borderRadius: 2,
+    height: 4,
+    marginBottom: spacing.lg,
+    width: 46,
+  },
   title: {
+    color: colors.ink,
     fontSize: 28,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 10,
+    fontWeight: '900',
     letterSpacing: 0,
+    lineHeight: 34,
+    marginBottom: spacing.sm,
   },
   titleCompact: {
     fontSize: 23,
     lineHeight: 29,
-    marginBottom: 7,
+    marginBottom: spacing.xs,
   },
   subtitle: {
+    color: colors.inkMuted,
     fontSize: 15,
     lineHeight: 22,
-    color: '#6B7280',
-    marginBottom: 24,
+    marginBottom: spacing.lg,
   },
   subtitleCompact: {
     fontSize: 14,
     lineHeight: 20,
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
-  dots: { flexDirection: 'row', gap: 8, marginBottom: 24 },
-  dot: { height: 8, borderRadius: 4 },
-  dotActive: { width: 28 },
-  dotInactive: { width: 8, backgroundColor: '#E5E7EB' },
+  dots: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  dot: {
+    borderRadius: radii.pill,
+    height: 8,
+  },
+  dotActive: {
+    width: 28,
+  },
+  dotInactive: {
+    backgroundColor: colors.border,
+    width: 8,
+  },
   nextButton: {
-    borderRadius: 18,
-    paddingVertical: 18,
     alignItems: 'center',
-    marginBottom: 8,
-    ...buttonShadow,
+    borderRadius: radii.md,
+    justifyContent: 'center',
+    minHeight: 54,
   },
   nextButtonCompact: {
-    paddingVertical: 14,
+    minHeight: 48,
   },
-  nextButtonPressed: { opacity: 0.88, transform: [{ scale: 0.98 }] },
-  nextButtonText: { color: '#FFFFFF', fontSize: 18, fontWeight: '700', letterSpacing: 0 },
-  finalActions: { gap: 10, marginBottom: 8 },
+  nextButtonPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.99 }],
+  },
+  nextButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 0,
+  },
+  finalActions: {
+    gap: spacing.md,
+  },
   track: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.pill,
+    borderWidth: 1,
     height: 64,
-    borderRadius: 32,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1.5,
     justifyContent: 'center',
     overflow: 'hidden',
     padding: TRACK_PADDING,
   },
   trackFill: {
-    position: 'absolute',
-    top: TRACK_PADDING,
+    borderRadius: radii.pill,
     bottom: TRACK_PADDING,
     left: TRACK_PADDING,
-    borderRadius: 28,
-  },
-  trackText: { fontSize: 15, fontWeight: '700', textAlign: 'center' },
-  thumb: {
-    width: THUMB_SIZE,
-    height: THUMB_SIZE,
-    borderRadius: THUMB_SIZE / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
     position: 'absolute',
+    top: TRACK_PADDING,
+  },
+  trackText: {
+    fontSize: 15,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  thumb: {
+    alignItems: 'center',
+    borderRadius: THUMB_SIZE / 2,
+    height: THUMB_SIZE,
+    justifyContent: 'center',
     left: TRACK_PADDING,
+    position: 'absolute',
+    width: THUMB_SIZE,
     ...thumbShadow,
   },
-  thumbArrow: { color: '#FFFFFF', fontSize: 26, fontWeight: '800', lineHeight: 30 },
+  thumbArrow: {
+    color: colors.white,
+    fontSize: 25,
+    fontWeight: '900',
+    lineHeight: 29,
+  },
   fallbackButton: {
     alignItems: 'center',
-    borderRadius: 18,
-    borderWidth: 1.5,
+    borderRadius: radii.md,
+    borderWidth: 1,
     justifyContent: 'center',
-    minHeight: 54,
+    minHeight: 52,
   },
-  fallbackButtonText: { fontSize: 16, fontWeight: '800' },
+  fallbackButtonText: {
+    fontSize: 15,
+    fontWeight: '900',
+  },
 });

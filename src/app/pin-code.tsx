@@ -148,7 +148,7 @@ export default function PinCodeScreen() {
 
   const finish = useCallback(() => {
     if (pinMode === 'create') {
-      router.replace('/home');
+      router.replace('/quests' as never);
       return;
     }
 

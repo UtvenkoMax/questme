@@ -11,7 +11,7 @@ type PinEntryPanelProps = {
 };
 
 export function PinEntryPanel({
-  cancelLabel = 'РћС‡РёСЃС‚РёС‚Рё',
+  cancelLabel = 'Очистити',
   compact = false,
   onCancel,
   onPressDigit,
@@ -57,7 +57,7 @@ type DigitKeyProps = {
 function DigitKey({ compact, digit, onPress }: DigitKeyProps) {
   return (
     <Pressable
-      accessibilityLabel={`Р¦РёС„СЂР° ${digit}`}
+      accessibilityLabel={`Цифра ${digit}`}
       accessibilityRole="button"
       onPress={() => onPress(digit)}
       style={({ pressed }) => [styles.key, compact && styles.keyCompact, pressed && styles.keyPressed]}

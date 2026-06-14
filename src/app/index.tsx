@@ -1,66 +1,51 @@
-import { useRouter } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
-import { FlatList, View, useWindowDimensions } from 'react-native';
+import { Redirect } from 'expo-router';
+import { useEffect, useState } from 'react';
 
-import { OnboardingPanel } from '@/components/onboarding/onboarding-panel';
-import { SlideItem } from '@/components/onboarding/slide-item';
-import { SLIDES } from '@/components/onboarding/slides-data';
-import { onboardingStyles as s } from '@/components/onboarding/onboarding.styles';
-import { getResponsiveMetrics } from '@/utils/responsive';
+import { LoadingState } from '@/components/ui/status';
+import { Screen } from '@/components/ui/screen';
+import { getUserProfile, hasPin, isOnboardingSeen } from '@/services/auth-service';
 
-export default function OnboardingScreen() {
-  const router = useRouter();
-  const flatListRef = useRef<FlatList>(null);
-  const { height, width } = useWindowDimensions();
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const layout = useMemo(() => getResponsiveMetrics(width, height), [height, width]);
+type Destination = '/onboarding' | '/register' | '/pin-code' | '/login';
 
-  const isLastSlide = currentIndex === SLIDES.length - 1;
-  const currentSlide = SLIDES[currentIndex];
+export default function EntryScreen() {
+  const [destination, setDestination] = useState<Destination | null>(null);
 
-  const goToNext = () => {
-    if (currentIndex < SLIDES.length - 1) {
-      flatListRef.current?.scrollToIndex({ index: currentIndex + 1, animated: true });
-      setCurrentIndex(currentIndex + 1);
+  useEffect(() => {
+    let isMounted = true;
+
+    async function resolveDestination() {
+      const [onboardingSeen, profile, pinExists] = await Promise.all([
+        isOnboardingSeen(),
+        getUserProfile(),
+        hasPin(),
+      ]);
+
+      if (!isMounted) return;
+
+      if (!onboardingSeen) {
+        setDestination('/onboarding');
+        return;
+      }
+
+      if (!profile) {
+        setDestination('/register');
+        return;
+      }
+
+      setDestination(pinExists ? '/login' : '/pin-code');
     }
-  };
 
-  const handleComplete = () => router.push('/register');
-  const handleFallback = () => router.push('/register');
+    resolveDestination();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  if (destination) return <Redirect href={destination} />;
 
   return (
-    <View style={[s.screen, { backgroundColor: currentSlide.bgFrom }]}>
-      <FlatList
-        ref={flatListRef}
-        data={SLIDES}
-        extraData={width}
-        style={s.slideList}
-        getItemLayout={(_, index) => ({
-          index,
-          length: width,
-          offset: width * index,
-        })}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        keyExtractor={(item) => item.id}
-        onMomentumScrollEnd={(e) => {
-          const idx = Math.round(e.nativeEvent.contentOffset.x / width);
-          setCurrentIndex(Math.min(Math.max(idx, 0), SLIDES.length - 1));
-        }}
-        renderItem={({ item }) => <SlideItem item={item} width={width} />}
-      />
-
-      <OnboardingPanel
-        slide={currentSlide}
-        currentIndex={currentIndex}
-        isLastSlide={isLastSlide}
-        onNext={goToNext}
-        onComplete={handleComplete}
-        onFallback={handleFallback}
-        layout={layout}
-        screenWidth={width}
-      />
-    </View>
+    <Screen scroll={false}>
+      <LoadingState text="Готуємо QuestMe..." />
+    </Screen>
   );
 }

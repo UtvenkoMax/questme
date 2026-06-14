@@ -1,57 +1,65 @@
 export type Quest = {
-  id: string;
-  title: string;
   category: string;
-  duration: string;
-  distance: string;
-  rating: number;
-  difficulty: 'Легко' | 'Середньо' | 'Складно';
-  participants: number;
-  image: number; // require() return type
   accentColor: string;
+  description: string;
+  difficulty: 'Легко' | 'Середньо' | 'Складно';
+  distance: string;
+  duration: string;
+  id: string;
+  image: number;
+  location: string;
+  participants: number;
+  rating: number;
+  title: string;
 };
 
 export const DIFFICULTY_COLORS: Record<Quest['difficulty'], string> = {
-  'Легко': '#10B981',
-  'Середньо': '#F59E0B',
-  'Складно': '#EF4444',
+  'Легко': '#227A55',
+  'Середньо': '#B56B10',
+  'Складно': '#BD3D3D',
 };
 
 export const MOCK_QUESTS: Quest[] = [
   {
-    id: '1',
-    title: 'Таємниці Старого Міста',
+    accentColor: '#206C5C',
     category: 'Історія',
-    duration: '2 год',
-    distance: '1.2 км',
-    rating: 4.8,
+    description: 'Маршрут історичними вулицями з короткими завданнями на уважність.',
     difficulty: 'Середньо',
-    participants: 1247,
+    distance: '1.2 км',
+    duration: '2 год',
+    id: '1',
     image: require('@/assets/images/quest1.png'),
-    accentColor: '#A855F7',
+    location: 'Поділ, Київ',
+    participants: 1247,
+    rating: 4.8,
+    title: 'Таємниці Старого Міста',
   },
   {
-    id: '2',
-    title: 'Парковий Квест',
+    accentColor: '#2F6FED',
     category: 'Природа',
-    duration: '1 год',
-    distance: '500 м',
-    rating: 4.6,
+    description: 'Легка прогулянка парком із фото-завданнями та простими підказками.',
     difficulty: 'Легко',
-    participants: 892,
+    distance: '500 м',
+    duration: '1 год',
+    id: '2',
     image: require('@/assets/images/quest2.png'),
-    accentColor: '#10B981',
+    location: 'Парк Шевченка',
+    participants: 892,
+    rating: 4.6,
+    title: 'Парковий Квест',
   },
   {
-    id: '3',
-    title: "Секретні Кав'ярні",
+    accentColor: '#B56B10',
     category: 'Розваги',
-    duration: '3 год',
-    distance: '2.5 км',
-    rating: 4.9,
+    description: 'Міський маршрут для тих, хто любить атмосферні місця, каву та загадки.',
     difficulty: 'Легко',
-    participants: 2104,
+    distance: '2.5 км',
+    duration: '3 год',
+    id: '3',
     image: require('@/assets/images/quest3.png'),
-    accentColor: '#F59E0B',
+    location: 'Центр Києва',
+    participants: 2104,
+    rating: 4.9,
+    title: "Секретні Кав'ярні",
   },
 ];

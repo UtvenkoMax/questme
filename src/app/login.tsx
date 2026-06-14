@@ -1,43 +1,52 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { authenticateWithBiometrics } from '@/components/auth/biometric-auth';
 import { PinEntryPanel } from '@/components/auth/pin-entry-panel';
 import { PIN_LENGTH } from '@/components/auth/pin-code.types';
+import { Button } from '@/components/ui/button';
+import { Notice } from '@/components/ui/status';
 import { getUserProfile, hasPin, isBiometricEnabled, type UserProfile, verifyPin } from '@/services/auth-service';
+import { colors, spacing, typography } from '@/theme';
 import { getResponsiveMetrics } from '@/utils/responsive';
 
 export default function LoginScreen() {
   const router = useRouter();
   const { height, width } = useWindowDimensions();
   const layout = useMemo(() => getResponsiveMetrics(width, height), [height, width]);
+  const compact = layout.isCompactHeight || layout.isCompactWidth;
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [biometricEnabled, setBiometricEnabledState] = useState(false);
   const [pin, setPin] = useState('');
-  const [message, setMessage] = useState('Р’РІРµРґС–С‚СЊ PIN-РєРѕРґ.');
+  const [message, setMessage] = useState('Введіть PIN-код.');
+  const [messageTone, setMessageTone] = useState<'neutral' | 'danger' | 'info'>('neutral');
   const [isBusy, setIsBusy] = useState(true);
-  const compact = layout.isCompactHeight || layout.isCompactWidth;
 
   const unlock = useCallback(() => {
-    router.replace('/home');
+    router.replace('/quests' as never);
   }, [router]);
 
   const loginWithBiometrics = useCallback(async () => {
     if (!biometricEnabled) {
-      setMessage('Р‘С–РѕРјРµС‚СЂРёС‡РЅРёР№ РІС…С–Рґ РІРёРјРєРЅРµРЅРѕ. РЈРІС–Р№РґС–С‚СЊ С‡РµСЂРµР· PIN.');
+      setMessageTone('info');
+      setMessage('Біометричний вхід вимкнено. Увійдіть через PIN.');
       return;
     }
 
     setIsBusy(true);
-    setMessage('РџС–РґС‚РІРµСЂРґСЊС‚Рµ Р±С–РѕРјРµС‚СЂС–СЋ Сѓ СЃРёСЃС‚РµРјРЅРѕРјСѓ РІС–РєРЅС–.');
+    setMessageTone('info');
+    setMessage('Підтвердьте біометрію у системному вікні.');
+
     try {
       const result = await authenticateWithBiometrics();
       if (result.success) {
         unlock();
         return;
       }
+
+      setMessageTone('danger');
       setMessage(result.message);
     } finally {
       setIsBusy(false);
@@ -86,12 +95,14 @@ export default function LoginScreen() {
   const completePin = useCallback(
     async (nextPin: string) => {
       setIsBusy(true);
+
       try {
         const isValid = await verifyPin(nextPin);
         setPin('');
 
         if (!isValid) {
-          setMessage('PIN-РєРѕРґ РЅРµРїСЂР°РІРёР»СЊРЅРёР№. РЎРїСЂРѕР±СѓР№С‚Рµ С‰Рµ СЂР°Р·.');
+          setMessageTone('danger');
+          setMessage('PIN-код неправильний. Спробуйте ще раз.');
           return;
         }
 
@@ -119,6 +130,8 @@ export default function LoginScreen() {
 
   const clearPin = useCallback(() => {
     setPin('');
+    setMessageTone('neutral');
+    setMessage('Введіть PIN-код.');
   }, []);
 
   return (
@@ -131,17 +144,14 @@ export default function LoginScreen() {
           compact && styles.contentCompact,
         ]}
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
+        showsVerticalScrollIndicator={false}>
         <View style={[styles.header, compact && styles.headerCompact]}>
           <Text style={styles.eyebrow}>QuestMe</Text>
-          <Text style={[styles.title, compact && styles.titleCompact]}>Р’С…С–Рґ</Text>
+          <Text style={[styles.title, compact && styles.titleCompact]}>Вхід</Text>
           <Text style={[styles.subtitle, compact && styles.subtitleCompact]}>
-            {profile ? `Р’С–С‚Р°С”РјРѕ, ${profile.name}.` : 'Р—Р°РІР°РЅС‚Р°Р¶СѓС”РјРѕ РїСЂРѕС„С–Р»СЊ.'}
+            {profile ? `Вітаємо, ${profile.name}.` : 'Завантажуємо профіль.'}
           </Text>
-          <Text accessibilityLiveRegion="polite" style={[styles.message, compact && styles.messageCompact]}>
-            {isBusy ? 'Р—Р°С‡РµРєР°Р№С‚Рµ...' : message}
-          </Text>
+          <Notice tone={isBusy ? 'info' : messageTone}>{isBusy ? 'Зачекайте...' : message}</Notice>
           <View style={[styles.dots, compact && styles.dotsCompact]}>
             {Array.from({ length: PIN_LENGTH }, (_, index) => (
               <View
@@ -152,34 +162,23 @@ export default function LoginScreen() {
           </View>
         </View>
 
-        <PinEntryPanel
-          cancelLabel="РћС‡РёСЃС‚РёС‚Рё"
-          compact={compact}
-          onCancel={clearPin}
-          onPressDigit={pressDigit}
-        />
+        <PinEntryPanel cancelLabel="Очистити" compact={compact} onCancel={clearPin} onPressDigit={pressDigit} />
 
         <View style={styles.actions}>
-          <Pressable
-            accessibilityRole="button"
+          <Button
             disabled={isBusy || !biometricEnabled}
+            icon="unlock"
             onPress={loginWithBiometrics}
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              (!biometricEnabled || isBusy) && styles.buttonDisabled,
-              pressed && !isBusy && biometricEnabled && styles.buttonPressed,
-            ]}
-          >
-            <Text style={styles.secondaryButtonText}>РЈРІС–Р№С‚Рё С‡РµСЂРµР· Face ID / Touch ID</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
+            title="Увійти через Face ID / Touch ID"
+            variant="secondary"
+          />
+          <Button
             disabled={isBusy}
+            icon="refresh-cw"
             onPress={() => router.push({ pathname: '/pin-code', params: { mode: 'reset' } })}
-            style={({ pressed }) => [styles.linkButton, pressed && styles.buttonPressed]}
-          >
-            <Text style={styles.linkButtonText}>Р—Р°Р±СѓР»Рё PIN?</Text>
-          </Pressable>
+            title="Забули PIN?"
+            variant="ghost"
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -188,15 +187,15 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   screen: {
+    backgroundColor: colors.background,
     flex: 1,
-    backgroundColor: '#F4F0EA',
   },
   content: {
-    flexGrow: 1,
     alignItems: 'center',
-    paddingBottom: 24,
-    paddingHorizontal: 24,
-    paddingTop: 34,
+    flexGrow: 1,
+    justifyContent: 'space-between',
+    paddingBottom: spacing.xxl,
+    paddingTop: spacing.xxl,
   },
   contentWide: {
     alignSelf: 'center',
@@ -204,118 +203,69 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   contentCompact: {
-    paddingBottom: 16,
-    paddingTop: 18,
+    paddingBottom: spacing.lg,
+    paddingTop: spacing.lg,
   },
   header: {
     alignItems: 'center',
-    flex: 1,
-    gap: 14,
-    justifyContent: 'center',
-    minHeight: 220,
+    gap: spacing.md,
+    paddingTop: spacing.lg,
     width: '100%',
   },
   headerCompact: {
-    gap: 9,
-    minHeight: 160,
+    gap: spacing.sm,
+    paddingTop: spacing.sm,
   },
   eyebrow: {
-    color: '#2D6A5F',
-    fontSize: 14,
-    fontWeight: '800',
-    textTransform: 'uppercase',
+    ...typography.eyebrow,
+    color: colors.primary,
   },
   title: {
-    color: '#171B22',
-    fontSize: 38,
-    fontWeight: '800',
-    lineHeight: 44,
+    color: colors.ink,
+    fontSize: 36,
+    fontWeight: '900',
+    letterSpacing: 0,
+    lineHeight: 42,
   },
   titleCompact: {
-    fontSize: 31,
-    lineHeight: 37,
+    fontSize: 30,
+    lineHeight: 36,
   },
   subtitle: {
-    color: '#59616F',
-    fontSize: 17,
-    lineHeight: 24,
+    ...typography.subtitle,
+    color: colors.inkMuted,
     textAlign: 'center',
   },
   subtitleCompact: {
-    fontSize: 15,
-    lineHeight: 21,
-  },
-  message: {
-    color: '#59616F',
-    fontSize: 15,
-    lineHeight: 22,
-    minHeight: 22,
-    textAlign: 'center',
-  },
-  messageCompact: {
     fontSize: 14,
     lineHeight: 20,
   },
   dots: {
     flexDirection: 'row',
-    gap: 14,
-    marginTop: 10,
+    gap: spacing.md,
+    marginTop: spacing.xs,
   },
   dotsCompact: {
-    gap: 11,
-    marginTop: 4,
+    gap: spacing.sm,
   },
   dot: {
-    width: 16,
-    height: 16,
+    borderColor: colors.borderStrong,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#4F5A68',
+    height: 16,
+    width: 16,
   },
   dotCompact: {
-    width: 14,
-    height: 14,
     borderRadius: 7,
+    height: 14,
+    width: 14,
   },
   dotFilled: {
-    backgroundColor: '#2D6A5F',
-    borderColor: '#2D6A5F',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   actions: {
     alignSelf: 'stretch',
-    gap: 12,
-    paddingBottom: 8,
-  },
-  secondaryButton: {
-    alignItems: 'center',
-    borderColor: '#2D6A5F',
-    borderRadius: 16,
-    borderWidth: 1.5,
-    justifyContent: 'center',
-    minHeight: 54,
-    paddingHorizontal: 14,
-  },
-  secondaryButtonText: {
-    color: '#2D6A5F',
-    fontSize: 16,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  buttonDisabled: {
-    borderColor: '#9BA29B',
-    opacity: 0.7,
-  },
-  buttonPressed: {
-    opacity: 0.72,
-  },
-  linkButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
-  },
-  linkButtonText: {
-    color: '#4F5A68',
-    fontSize: 15,
-    fontWeight: '800',
+    gap: spacing.md,
   },
 });

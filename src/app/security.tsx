@@ -1,9 +1,13 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCallback, useState } from 'react';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
 import { authenticateWithBiometrics } from '@/components/auth/biometric-auth';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { PageHeader, SectionHeader } from '@/components/ui/layout';
+import { Screen } from '@/components/ui/screen';
+import { LoadingState, Notice } from '@/components/ui/status';
 import {
   deleteLocalAccountData,
   getUserProfile,
@@ -12,18 +16,18 @@ import {
   setBiometricEnabled as saveBiometricPreference,
   type UserProfile,
 } from '@/services/auth-service';
-import { getResponsiveMetrics } from '@/utils/responsive';
+import { colors, spacing, typography } from '@/theme';
 
 export default function SecurityScreen() {
   const router = useRouter();
-  const { height, width } = useWindowDimensions();
-  const layout = useMemo(() => getResponsiveMetrics(width, height), [height, width]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [biometricEnabled, setBiometricEnabledState] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState<{ text: string; tone: 'success' | 'danger' | 'neutral' } | null>(null);
   const [isBusy, setIsBusy] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadSecurity = useCallback(async () => {
+    setIsLoading(true);
     const [storedProfile, storedBiometricEnabled] = await Promise.all([
       getUserProfile(),
       isBiometricEnabled(),
@@ -36,6 +40,7 @@ export default function SecurityScreen() {
 
     setProfile(storedProfile);
     setBiometricEnabledState(storedBiometricEnabled);
+    setIsLoading(false);
   }, [router]);
 
   useFocusEffect(
@@ -46,13 +51,13 @@ export default function SecurityScreen() {
 
   const toggleBiometrics = async () => {
     setIsBusy(true);
-    setMessage('');
+    setMessage(null);
 
     try {
       if (biometricEnabled) {
         await saveBiometricPreference(false);
         setBiometricEnabledState(false);
-        setMessage('Біометричний вхід вимкнено.');
+        setMessage({ text: 'Біометричний вхід вимкнено.', tone: 'success' });
         return;
       }
 
@@ -61,13 +66,13 @@ export default function SecurityScreen() {
       });
 
       if (!result.success) {
-        setMessage(result.message);
+        setMessage({ text: result.message, tone: 'danger' });
         return;
       }
 
       await saveBiometricPreference(true);
       setBiometricEnabledState(true);
-      setMessage(`${result.biometricName} увімкнено.`);
+      setMessage({ text: `${result.biometricName} увімкнено.`, tone: 'success' });
     } finally {
       setIsBusy(false);
     }
@@ -95,189 +100,107 @@ export default function SecurityScreen() {
       ]
     );
   };
-  const compact = layout.isCompactHeight || layout.isCompactWidth;
+
+  if (isLoading) {
+    return (
+      <Screen scroll={false}>
+        <LoadingState text="Завантажуємо налаштування..." />
+      </Screen>
+    );
+  }
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <ScrollView
-        contentContainerStyle={[
-          styles.content,
-          { paddingHorizontal: layout.gutter },
-          layout.isWide && styles.contentWide,
-          compact && styles.contentCompact,
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.back()}
-          style={({ pressed }) => [styles.backButton, pressed && styles.buttonPressed]}>
-          <Text style={styles.backButtonText}>Назад</Text>
-        </Pressable>
+    <Screen contentStyle={styles.content}>
+      <Button fullWidth={false} icon="arrow-left" onPress={() => router.back()} size="sm" title="Назад" variant="ghost" />
+      <PageHeader
+        eyebrow="Безпека"
+        subtitle={profile ? profile.email : 'Керуйте PIN і біометрією.'}
+        title="Налаштування входу"
+      />
 
-        <View style={styles.header}>
-          <Text style={styles.eyebrow}>Безпека</Text>
-          <Text style={styles.title}>Налаштування входу</Text>
-          <Text style={styles.subtitle}>
-            {profile ? `${profile.email}` : 'Керуйте PIN і біометрією.'}
-          </Text>
-        </View>
+      {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
 
-        {message ? (
-          <Text accessibilityLiveRegion="polite" style={styles.message}>
-            {message}
-          </Text>
-        ) : null}
+      <Card style={styles.card}>
+        <SectionHeader
+          subtitle="PIN потрібен для входу й підтвердження зміни коду."
+          title="PIN і біометрія"
+        />
+        <ActionRow
+          description="Потрібен поточний PIN перед створенням нового."
+          label="Змінити PIN"
+          onPress={() => router.push({ pathname: '/pin-code', params: { mode: 'change' } })}
+        />
+        <ActionRow
+          description="Створити новий PIN для входу."
+          label="Скинути PIN"
+          onPress={() => router.push({ pathname: '/pin-code', params: { mode: 'reset' } })}
+        />
+        <ActionRow
+          description={biometricEnabled ? 'Face ID / Touch ID активний.' : 'Підтвердьте біометрію для швидкого входу.'}
+          disabled={isBusy}
+          label={biometricEnabled ? 'Вимкнути біометрію' : 'Увімкнути біометрію'}
+          onPress={toggleBiometrics}
+        />
+      </Card>
 
-        <View style={styles.section}>
-          <ActionButton
-            description="Потрібен поточний PIN перед створенням нового."
-            label="Змінити PIN"
-            onPress={() => router.push({ pathname: '/pin-code', params: { mode: 'change' } })}
-          />
-          <ActionButton
-            description="Створити новий PIN для входу."
-            label="Скинути PIN"
-            onPress={() => router.push({ pathname: '/pin-code', params: { mode: 'reset' } })}
-          />
-          <ActionButton
-            description={biometricEnabled ? 'Face ID / Touch ID активний.' : 'Підтвердьте біометрію для швидкого входу.'}
-            disabled={isBusy}
-            label={biometricEnabled ? 'Вимкнути біометрію' : 'Увімкнути біометрію'}
-            onPress={toggleBiometrics}
-          />
-        </View>
-
-        <View style={styles.section}>
-          <ActionButton
-            description="Профіль залишиться на пристрої, але сесія буде закрита."
-            label="Вийти з акаунта"
-            onPress={signOut}
-          />
-          <ActionButton
-            danger
-            description="Очистити профіль, PIN, квести та локальні налаштування."
-            label="Видалити локальні дані"
-            onPress={confirmDelete}
-          />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+      <Card style={styles.card}>
+        <SectionHeader
+          subtitle="Керуйте сесією та даними, які збережені на цьому пристрої."
+          title="Дані акаунта"
+        />
+        <Button icon="log-out" onPress={signOut} title="Вийти з акаунта" variant="ghost" />
+        <Button icon="trash-2" onPress={confirmDelete} title="Видалити локальні дані" variant="danger" />
+      </Card>
+    </Screen>
   );
 }
 
-type ActionButtonProps = {
-  danger?: boolean;
+type ActionRowProps = {
   description: string;
   disabled?: boolean;
   label: string;
   onPress: () => void;
 };
 
-function ActionButton({ danger = false, description, disabled = false, label, onPress }: ActionButtonProps) {
+function ActionRow({ description, disabled = false, label, onPress }: ActionRowProps) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.actionButton,
-        danger && styles.actionDanger,
-        disabled && styles.actionDisabled,
-        pressed && !disabled && styles.buttonPressed,
-      ]}>
-      <Text style={[styles.actionLabel, danger && styles.actionLabelDanger]}>{label}</Text>
-      <Text style={styles.actionDescription}>{description}</Text>
-    </Pressable>
+    <View style={styles.actionRow}>
+      <View style={styles.actionCopy}>
+        <Text style={styles.actionLabel}>{label}</Text>
+        <Text style={styles.actionDescription}>{description}</Text>
+      </View>
+      <Button disabled={disabled} fullWidth={false} onPress={onPress} size="sm" title="Відкрити" variant="secondary" />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#F4F0EA',
-  },
   content: {
-    gap: 22,
-    paddingHorizontal: 24,
-    paddingVertical: 28,
+    gap: spacing.xl,
   },
-  contentWide: {
-    alignSelf: 'center',
-    maxWidth: 620,
-    width: '100%',
+  card: {
+    gap: spacing.lg,
   },
-  contentCompact: {
-    gap: 18,
-    paddingVertical: 18,
+  actionRow: {
+    alignItems: 'center',
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    justifyContent: 'space-between',
+    paddingTop: spacing.md,
   },
-  backButton: {
-    alignSelf: 'flex-start',
-    paddingVertical: 8,
-  },
-  backButtonText: {
-    color: '#4F5A68',
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  header: {
-    gap: 10,
-  },
-  eyebrow: {
-    color: '#2D6A5F',
-    fontSize: 14,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-  },
-  title: {
-    color: '#171B22',
-    fontSize: 36,
-    fontWeight: '900',
-    lineHeight: 42,
-  },
-  subtitle: {
-    color: '#59616F',
-    fontSize: 16,
-    lineHeight: 23,
-  },
-  message: {
-    color: '#59616F',
-    fontSize: 14,
-    fontWeight: '800',
-    lineHeight: 20,
-  },
-  section: {
-    gap: 12,
-  },
-  actionButton: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#D6D0C8',
-    borderRadius: 16,
-    borderWidth: 1,
-    gap: 6,
-    minHeight: 78,
-    padding: 16,
-  },
-  actionDanger: {
-    borderColor: '#D7A1A1',
-  },
-  actionDisabled: {
-    opacity: 0.68,
+  actionCopy: {
+    flex: 1,
+    gap: spacing.xs,
   },
   actionLabel: {
-    color: '#171B22',
+    color: colors.ink,
     fontSize: 16,
     fontWeight: '900',
   },
-  actionLabelDanger: {
-    color: '#B33A3A',
-  },
   actionDescription: {
-    color: '#59616F',
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  buttonPressed: {
-    opacity: 0.76,
+    ...typography.body,
+    color: colors.inkMuted,
   },
 });

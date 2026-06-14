@@ -25,7 +25,7 @@ type PinCodeScreenViewProps = {
 };
 
 export function PinCodeScreenView({
-  biometricRetryLabel = 'РЎРїСЂРѕР±СѓРІР°С‚Рё Р±С–РѕРјРµС‚СЂС–СЋ С‰Рµ СЂР°Р·',
+  biometricRetryLabel = 'Спробувати біометрію ще раз',
   cancelLabel,
   isBusy,
   message,
@@ -53,11 +53,12 @@ export function PinCodeScreenView({
           compact && styles.contentCompact,
         ]}
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
+        showsVerticalScrollIndicator={false}>
         <View style={[styles.header, compact && styles.headerCompact]}>
           <Text style={[styles.title, compact && styles.titleCompact]}>{title}</Text>
-          <Text style={[styles.message, compact && styles.messageCompact]}>{message}</Text>
+          <Text accessibilityLiveRegion="polite" style={[styles.message, compact && styles.messageCompact]}>
+            {message}
+          </Text>
           <View style={[styles.dots, compact && styles.dotsCompact]}>
             {Array.from({ length: PIN_LENGTH }, (_, index) => (
               <View
@@ -68,33 +69,33 @@ export function PinCodeScreenView({
           </View>
         </View>
 
-        {isPinStep && (
+        {isPinStep ? (
           <PinEntryPanel
             cancelLabel={cancelLabel}
             compact={compact}
             onCancel={onCancel}
             onPressDigit={onPressDigit}
           />
-        )}
+        ) : null}
 
-        {step === 'biometric' && (
+        {step === 'biometric' ? (
           <View style={styles.actions}>
             <PrimaryButton disabled={isBusy} onPress={onRetryBiometric}>
-              {isBusy ? 'РћС‡С–РєСѓС”РјРѕ...' : biometricRetryLabel}
+              {isBusy ? 'Очікуємо...' : biometricRetryLabel}
             </PrimaryButton>
             {onSkipBiometric ? (
               <SecondaryButton disabled={isBusy} onPress={onSkipBiometric}>
-                РџСЂРѕРїСѓСЃС‚РёС‚Рё
+                Пропустити
               </SecondaryButton>
             ) : null}
           </View>
-        )}
+        ) : null}
 
-        {step === 'done' && (
+        {step === 'done' ? (
           <View style={styles.actions}>
-            <PrimaryButton onPress={onFinish}>РџСЂРѕРґРѕРІР¶РёС‚Рё</PrimaryButton>
+            <PrimaryButton onPress={onFinish}>Продовжити</PrimaryButton>
           </View>
-        )}
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -116,8 +117,7 @@ function PrimaryButton({ children, disabled = false, onPress }: PrimaryButtonPro
         styles.primaryButton,
         disabled && styles.buttonDisabled,
         pressed && !disabled && styles.buttonPressed,
-      ]}
-    >
+      ]}>
       <Text style={styles.primaryButtonText}>{children}</Text>
     </Pressable>
   );
@@ -133,8 +133,7 @@ function SecondaryButton({ children, disabled = false, onPress }: PrimaryButtonP
         styles.secondaryButton,
         disabled && styles.secondaryButtonDisabled,
         pressed && !disabled && styles.buttonPressed,
-      ]}
-    >
+      ]}>
       <Text style={styles.secondaryButtonText}>{children}</Text>
     </Pressable>
   );
