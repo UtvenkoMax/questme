@@ -107,12 +107,6 @@ export function SlideToRegister({ accent, onComplete, onFallback }: SlideToRegis
           <Text style={styles.thumbArrow}>→</Text>
         </Animated.View>
       </View>
-      <Pressable
-        accessibilityRole="button"
-        onPress={onFallback}
-        style={({ pressed }) => [styles.fallbackButton, { borderColor: accent }, pressed && styles.nextButtonPressed]}>
-        <Text style={[styles.fallbackButtonText, { color: accent }]}>Створити профіль</Text>
-      </Pressable>
     </View>
   );
 }
