@@ -46,7 +46,7 @@ export function RegisterScreenView({
 }: RegisterScreenViewProps) {
   return (
     <Screen contentStyle={styles.content} keyboard>
-      <Button fullWidth={false} icon="arrow-left" onPress={onBack} size="sm" title="Назад" variant="ghost" />
+
       <PageHeader
         eyebrow="QuestMe"
         subtitle="Створіть профіль, а потім додайте PIN для швидкого й безпечного входу."

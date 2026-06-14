@@ -33,6 +33,7 @@ export default function QuestsScreen() {
   const router = useRouter();
   const { height, width } = useWindowDimensions();
   const layout = useMemo(() => getResponsiveMetrics(width, height), [height, width]);
+  const isPhoneSize = !layout.isWide;
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [quests, setQuests] = useState<PersonalQuest[]>([]);
   const [title, setTitle] = useState('');
@@ -194,7 +195,7 @@ export default function QuestsScreen() {
         </View>
       </View>
 
-      <View style={styles.exploreSection}>
+      <View style={[styles.exploreSection, isPhoneSize && styles.exploreSectionPhone]}>
         <SectionHeader
           action={
             <Button
@@ -365,8 +366,13 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.inkMuted,
   },
+
+  
   exploreSection: {
     gap: spacing.lg,
+  },
+  exploreSectionPhone: {
+    paddingTop: '35%',
   },
   filterRow: {
     flexDirection: 'row',
