@@ -1,5 +1,14 @@
-import type { ReactNode } from 'react';
-import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { useEffect, useRef, type ReactNode } from 'react';
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type NativeSyntheticEvent,
+  type TextInputChangeEventData,
+  type TextInputProps,
+} from 'react-native';
 
 import { colors, radii, spacing, typography } from '@/theme';
 
@@ -10,7 +19,49 @@ type TextFieldProps = TextInputProps & {
   rightAction?: ReactNode;
 };
 
-export function TextField({ error, hint, label, rightAction, style, ...inputProps }: TextFieldProps) {
+type WebTextInputChangeEvent = TextInputChangeEventData & {
+  isComposing?: boolean;
+};
+
+export function TextField({
+  error,
+  hint,
+  inputMode,
+  keyboardType,
+  label,
+  defaultValue,
+  onChange,
+  onChangeText,
+  rightAction,
+  secureTextEntry,
+  style,
+  value,
+  ...inputProps
+}: TextFieldProps) {
+  const usesDefaultTextKeyboard = !secureTextEntry && inputMode == null && keyboardType == null;
+  const usesUncontrolledWebTextInput = Platform.OS === 'web' && usesDefaultTextKeyboard;
+  const inputRef = useRef<(TextInput & { value?: string }) | null>(null);
+  const handleChange =
+    onChange || onChangeText
+      ? (event: NativeSyntheticEvent<TextInputChangeEventData>) => {
+          onChange?.(event);
+
+          const nativeEvent = event.nativeEvent as WebTextInputChangeEvent;
+          if (Platform.OS === 'web' && nativeEvent.isComposing) return;
+
+          onChangeText?.(nativeEvent.text);
+        }
+      : undefined;
+
+  useEffect(() => {
+    if (!usesUncontrolledWebTextInput || typeof value !== 'string') return;
+
+    const input = inputRef.current;
+    if (input && input.value !== value) {
+      input.value = value;
+    }
+  }, [usesUncontrolledWebTextInput, value]);
+
   return (
     <View style={styles.field}>
       <View style={styles.header}>
@@ -18,8 +69,15 @@ export function TextField({ error, hint, label, rightAction, style, ...inputProp
         {rightAction}
       </View>
       <TextInput
+        inputMode={usesDefaultTextKeyboard ? 'text' : inputMode}
+        keyboardType={usesDefaultTextKeyboard ? 'default' : keyboardType}
+        defaultValue={usesUncontrolledWebTextInput ? value ?? defaultValue : defaultValue}
+        onChange={handleChange}
         placeholderTextColor={colors.inkSubtle}
+        ref={inputRef}
+        secureTextEntry={secureTextEntry}
         style={[styles.input, inputProps.multiline && styles.multiline, Boolean(error) && styles.inputError, style]}
+        value={usesUncontrolledWebTextInput ? undefined : value}
         {...inputProps}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
