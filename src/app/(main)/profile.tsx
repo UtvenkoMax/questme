@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -167,35 +167,4 @@ function InfoRow({ label, value }: InfoRowProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    gap: spacing.xxl,
-  },
-  metrics: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  card: {
-    gap: spacing.lg,
-  },
-  infoRow: {
-    alignItems: 'center',
-    borderTopColor: colors.border,
-    borderTopWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.md,
-    justifyContent: 'space-between',
-    paddingTop: spacing.md,
-  },
-  infoLabel: {
-    ...typography.label,
-    color: colors.inkMuted,
-  },
-  infoValue: {
-    color: colors.ink,
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '900',
-    textAlign: 'right',
-  },
-});
+import { styles } from './profile.styles';

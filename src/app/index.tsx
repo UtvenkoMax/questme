@@ -1,11 +1,13 @@
 import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
+import * as SplashScreen from 'expo-splash-screen';
 
-import { LoadingState } from '@/components/ui/status';
-import { Screen } from '@/components/ui/screen';
 import { getUserProfile, hasPin, isOnboardingSeen } from '@/services/auth-service';
 
 type Destination = '/onboarding' | '/register' | '/pin-code' | '/login';
+
+// Запобігаємо автоматичному приховуванню Splash екрану
+SplashScreen.preventAutoHideAsync();
 
 export default function EntryScreen() {
   const [destination, setDestination] = useState<Destination | null>(null);
@@ -14,25 +16,29 @@ export default function EntryScreen() {
     let isMounted = true;
 
     async function resolveDestination() {
-      const [onboardingSeen, profile, pinExists] = await Promise.all([
-        isOnboardingSeen(),
-        getUserProfile(),
-        hasPin(),
-      ]);
+      try {
+        const [onboardingSeen, profile, pinExists] = await Promise.all([
+          isOnboardingSeen(),
+          getUserProfile(),
+          hasPin(),
+        ]);
 
-      if (!isMounted) return;
+        if (!isMounted) return;
 
-      if (!onboardingSeen) {
-        setDestination('/onboarding');
-        return;
+        if (!onboardingSeen) {
+          setDestination('/onboarding');
+        } else if (!profile) {
+          setDestination('/register');
+        } else {
+          setDestination(pinExists ? '/login' : '/pin-code');
+        }
+      } catch (e) {
+        // У разі помилки відправляємо на онбординг як фолбек
+        if (isMounted) setDestination('/onboarding');
+      } finally {
+        // Ховаємо Splash screen ТІЛЬКИ коли визначили куди йти
+        await SplashScreen.hideAsync();
       }
-
-      if (!profile) {
-        setDestination('/register');
-        return;
-      }
-
-      setDestination(pinExists ? '/login' : '/pin-code');
     }
 
     resolveDestination();
@@ -43,9 +49,6 @@ export default function EntryScreen() {
 
   if (destination) return <Redirect href={destination} />;
 
-  return (
-    <Screen scroll={false}>
-      <LoadingState text="Готуємо QuestMe..." />
-    </Screen>
-  );
+  // Повертаємо null, оскільки Splash screen все ще показується
+  return null; 
 }

@@ -79,10 +79,20 @@ export function getQuestProgress(quests: Quest[]) {
   const completedCount = quests.filter((quest) => quest.completed).length;
   const totalPoints = quests.reduce((total, quest) => total + (quest.completed ? quest.points : 0), 0);
 
+  // Gamification: Level formula (100 XP per level)
+  const level = Math.floor(totalPoints / 100) + 1;
+  const xpForNextLevel = level * 100;
+  const xpInCurrentLevel = totalPoints % 100;
+  const levelProgressPercent = Math.round((xpInCurrentLevel / 100) * 100);
+
   return {
     completedCount,
     completionPercent: quests.length ? Math.round((completedCount / quests.length) * 100) : 0,
     totalCount: quests.length,
     totalPoints,
+    level,
+    xpForNextLevel,
+    xpInCurrentLevel,
+    levelProgressPercent,
   };
 }

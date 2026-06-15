@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, Text, View } from 'react-native';
 
 import { authenticateWithBiometrics } from '@/components/auth/biometric-auth';
 import { Button } from '@/components/ui/button';
@@ -174,33 +174,4 @@ function ActionRow({ description, disabled = false, label, onPress }: ActionRowP
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    gap: spacing.xl,
-  },
-  card: {
-    gap: spacing.lg,
-  },
-  actionRow: {
-    alignItems: 'center',
-    borderTopColor: colors.border,
-    borderTopWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.md,
-    justifyContent: 'space-between',
-    paddingTop: spacing.md,
-  },
-  actionCopy: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  actionLabel: {
-    color: colors.ink,
-    fontSize: 16,
-    fontWeight: '900',
-  },
-  actionDescription: {
-    ...typography.body,
-    color: colors.inkMuted,
-  },
-});
+import { styles } from './security.styles';

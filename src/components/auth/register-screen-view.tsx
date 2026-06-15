@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -53,7 +53,7 @@ export function RegisterScreenView({
         title="Реєстрація"
       />
 
-      <Card style={styles.form}>
+      <View style={styles.form}>
         <TextField
           autoCapitalize="words"
           autoComplete="name"
@@ -115,54 +115,12 @@ export function RegisterScreenView({
 
         {submitError ? <Notice tone="danger">{submitError}</Notice> : null}
 
-        <Button disabled={!canSubmit} icon="user-plus" loading={isSubmitting} onPress={onSubmit} title="Створити профіль" />
-      </Card>
+        <View style={styles.submitWrapper}>
+          <Button disabled={!canSubmit} icon="user-plus" loading={isSubmitting} onPress={onSubmit} title="Створити профіль" />
+        </View>
+      </View>
     </Screen>
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    gap: spacing.xxl,
-  },
-  form: {
-    gap: spacing.lg,
-  },
-  inlineButton: {
-    paddingHorizontal: spacing.xs,
-    paddingVertical: spacing.xs,
-  },
-  inlineButtonPressed: {
-    opacity: 0.64,
-  },
-  inlineButtonText: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: '900',
-  },
-  passwordStrength: {
-    gap: spacing.sm,
-  },
-  strengthBars: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  strengthBar: {
-    backgroundColor: colors.border,
-    borderRadius: 999,
-    flex: 1,
-    height: 7,
-  },
-  strengthBarActive: {
-    backgroundColor: colors.accent,
-  },
-  strengthBarStrong: {
-    backgroundColor: colors.success,
-  },
-  helperText: {
-    color: colors.inkMuted,
-    fontSize: 13,
-    fontWeight: '700',
-    lineHeight: 18,
-  },
-});
+import { styles } from './register-screen-view.styles';

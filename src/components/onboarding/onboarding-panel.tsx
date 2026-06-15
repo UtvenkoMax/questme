@@ -1,3 +1,4 @@
+import * as Haptics from 'expo-haptics';
 import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -66,6 +67,7 @@ export function OnboardingPanel({
           accessibilityRole="button"
           hitSlop={8}
           onPress={onNext}
+          onPressIn={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
           style={({ pressed }) => [
             s.nextButton,
             compact && s.nextButtonCompact,

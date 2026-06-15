@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Platform,
   StyleSheet,
@@ -10,7 +10,7 @@ import {
   type TextInputProps,
 } from 'react-native';
 
-import { colors, radii, spacing, typography } from '@/theme';
+import { colors, radii, spacing, typography, shadows } from '@/theme';
 
 type TextFieldProps = TextInputProps & {
   error?: string;
@@ -41,6 +41,8 @@ export function TextField({
   const usesDefaultTextKeyboard = !secureTextEntry && inputMode == null && keyboardType == null;
   const usesUncontrolledWebTextInput = Platform.OS === 'web' && usesDefaultTextKeyboard;
   const inputRef = useRef<(TextInput & { value?: string }) | null>(null);
+  const [isFocused, setIsFocused] = useState(false);
+
   const handleChange =
     onChange || onChangeText
       ? (event: NativeSyntheticEvent<TextInputChangeEventData>) => {
@@ -62,70 +64,49 @@ export function TextField({
     }
   }, [usesUncontrolledWebTextInput, value]);
 
+  const handleFocus = (e: any) => {
+    setIsFocused(true);
+    inputProps.onFocus?.(e);
+  };
+
+  const handleBlur = (e: any) => {
+    setIsFocused(false);
+    inputProps.onBlur?.(e);
+  };
+
+  const isError = Boolean(error);
+
   return (
     <View style={styles.field}>
       <View style={styles.header}>
-        <Text style={styles.label}>{label}</Text>
+        <Text style={[styles.label, isFocused && styles.labelFocused, isError && styles.labelError]}>{label}</Text>
         {rightAction}
       </View>
-      <TextInput
-        inputMode={usesDefaultTextKeyboard ? 'text' : inputMode}
-        keyboardType={usesDefaultTextKeyboard ? 'default' : keyboardType}
-        defaultValue={usesUncontrolledWebTextInput ? value ?? defaultValue : defaultValue}
-        onChange={handleChange}
-        placeholderTextColor={colors.inkSubtle}
-        ref={inputRef}
-        secureTextEntry={secureTextEntry}
-        style={[styles.input, inputProps.multiline && styles.multiline, Boolean(error) && styles.inputError, style]}
-        value={usesUncontrolledWebTextInput ? undefined : value}
-        {...inputProps}
-      />
+      <View style={[
+        styles.inputWrapper,
+        isFocused && styles.inputWrapperFocused,
+        isError && styles.inputWrapperError,
+        inputProps.multiline && styles.inputWrapperMultiline
+      ]}>
+        <TextInput
+          inputMode={usesDefaultTextKeyboard ? 'text' : inputMode}
+          keyboardType={usesDefaultTextKeyboard ? 'default' : keyboardType}
+          defaultValue={usesUncontrolledWebTextInput ? value ?? defaultValue : defaultValue}
+          onChange={handleChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          placeholderTextColor={colors.inkSubtle}
+          ref={inputRef}
+          secureTextEntry={secureTextEntry}
+          style={[styles.input, inputProps.multiline && styles.multiline, style]}
+          value={usesUncontrolledWebTextInput ? undefined : value}
+          {...inputProps}
+        />
+      </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {!error && hint ? <Text style={styles.hint}>{hint}</Text> : null}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  field: {
-    gap: spacing.sm,
-  },
-  header: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  label: {
-    ...typography.label,
-    color: colors.ink,
-  },
-  input: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    color: colors.ink,
-    fontSize: 16,
-    minHeight: 52,
-    paddingHorizontal: spacing.lg,
-  },
-  multiline: {
-    minHeight: 92,
-    paddingTop: spacing.md,
-    textAlignVertical: 'top',
-  },
-  inputError: {
-    borderColor: colors.danger,
-  },
-  error: {
-    color: colors.danger,
-    fontSize: 13,
-    fontWeight: '700',
-    lineHeight: 18,
-  },
-  hint: {
-    color: colors.inkMuted,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-});
+import { styles } from './text-field.styles';

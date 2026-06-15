@@ -1,4 +1,6 @@
-import { Pressable, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import React, { useRef } from 'react';
+import { Animated, Pressable, Text, View } from 'react-native';
 
 import { PIN_DIGIT_ROWS } from './pin-code.types';
 import { pinCodeStyles as styles } from './pin-code.styles';
@@ -30,10 +32,14 @@ export function PinEntryPanel({
         <View style={[styles.keypadBottomRow, compact && styles.keypadBottomRowCompact]}>
           <View style={[styles.bottomSpacer, compact && styles.bottomSpacerCompact]} />
           <DigitKey compact={compact} digit="0" onPress={onPressDigit} />
+          
           <Pressable
             accessibilityLabel={cancelLabel}
             accessibilityRole="button"
-            onPress={onCancel}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onCancel();
+            }}
             style={({ pressed }) => [
               styles.cancelButton,
               compact && styles.cancelButtonCompact,
@@ -55,14 +61,60 @@ type DigitKeyProps = {
 };
 
 function DigitKey({ compact, digit, onPress }: DigitKeyProps) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const backgroundColor = useRef(new Animated.Value(0)).current;
+
+  const handlePressIn = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Animated.parallel([
+      Animated.spring(scale, {
+        toValue: 0.85,
+        useNativeDriver: true,
+        speed: 30,
+        bounciness: 4,
+      }),
+      Animated.timing(backgroundColor, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: false,
+      })
+    ]).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.parallel([
+      Animated.spring(scale, {
+        toValue: 1,
+        useNativeDriver: true,
+        speed: 20,
+        bounciness: 8,
+      }),
+      Animated.timing(backgroundColor, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: false,
+      })
+    ]).start();
+  };
+
+  const animatedBg = backgroundColor.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['#F8FAFC', '#E2E8F0'] // Matches theme surfaceMuted and border
+  });
+
   return (
-    <Pressable
-      accessibilityLabel={`Цифра ${digit}`}
-      accessibilityRole="button"
-      onPress={() => onPress(digit)}
-      style={({ pressed }) => [styles.key, compact && styles.keyCompact, pressed && styles.keyPressed]}
-    >
-      <Text style={[styles.keyText, compact && styles.keyTextCompact]}>{digit}</Text>
-    </Pressable>
+    <Animated.View style={[{ transform: [{ scale }] }]}>
+      <Pressable
+        accessibilityLabel={`Цифра ${digit}`}
+        accessibilityRole="button"
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={() => onPress(digit)}
+      >
+        <Animated.View style={[styles.key, compact && styles.keyCompact, { backgroundColor: animatedBg }]}>
+          <Text style={[styles.keyText, compact && styles.keyTextCompact]}>{digit}</Text>
+        </Animated.View>
+      </Pressable>
+    </Animated.View>
   );
 }

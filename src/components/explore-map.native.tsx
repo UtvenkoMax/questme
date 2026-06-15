@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import MapView, { Marker, PROVIDER_DEFAULT, type Region } from 'react-native-maps';
 
 import { MOCK_QUESTS } from '@/components/home/quest.types';
@@ -114,68 +114,4 @@ export function ExploreMap() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.backgroundAlt,
-    flex: 1,
-  },
-  map: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  statusCard: {
-    alignItems: 'flex-start',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.md,
-    left: spacing.lg,
-    padding: spacing.md,
-    position: 'absolute',
-    right: spacing.lg,
-    top: 54,
-  },
-  statusIcon: {
-    alignItems: 'center',
-    backgroundColor: colors.primarySoft,
-    borderRadius: radii.pill,
-    height: 40,
-    justifyContent: 'center',
-    width: 40,
-  },
-  statusCopy: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  statusEyebrow: {
-    ...typography.eyebrow,
-    color: colors.primary,
-  },
-  statusTitle: {
-    color: colors.ink,
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  statusText: {
-    color: colors.inkMuted,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  errorContainer: {
-    backgroundColor: colors.danger,
-    borderRadius: radii.md,
-    bottom: spacing.xl,
-    left: spacing.lg,
-    padding: spacing.md,
-    position: 'absolute',
-    right: spacing.lg,
-  },
-  errorText: {
-    color: colors.white,
-    fontSize: 13,
-    fontWeight: '800',
-    lineHeight: 18,
-    textAlign: 'center',
-  },
-});
+import { styles } from './explore-map.native.styles';
