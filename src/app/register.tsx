@@ -1,5 +1,6 @@
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { RegisterScreenView } from '@/components/auth/register-screen-view';
 import {
@@ -17,15 +18,25 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const navigationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const errors = useMemo(() => validateRegistration({ email, name, password }), [email, name, password]);
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
   const canSubmit = useMemo(
-    () => !hasRegistrationErrors(errors) && !isSubmitting,
-    [errors, isSubmitting]
+    () => !hasRegistrationErrors(errors) && !isSubmitting && !showConfetti,
+    [errors, isSubmitting, showConfetti]
   );
 
+  useEffect(() => {
+    return () => {
+      if (navigationTimer.current) clearTimeout(navigationTimer.current);
+    };
+  }, []);
+
   const submit = async () => {
+    if (showConfetti) return;
+
     const nextErrors = validateRegistration({ email, name, password });
     if (hasRegistrationErrors(nextErrors)) return;
 
@@ -33,7 +44,13 @@ export default function RegisterScreen() {
     setSubmitError('');
     try {
       await registerAccount({ email, name, password });
-      router.push('/pin-code');
+      setIsSubmitting(false);
+      setShowConfetti(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+
+      navigationTimer.current = setTimeout(() => {
+        router.push('/pin-code');
+      }, 1250);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Не вдалося створити профіль.');
     } finally {
@@ -56,6 +73,7 @@ export default function RegisterScreen() {
       onSubmit={submit}
       password={password}
       passwordStrength={passwordStrength}
+      showConfetti={showConfetti}
       showPassword={showPassword}
       submitError={submitError}
     />

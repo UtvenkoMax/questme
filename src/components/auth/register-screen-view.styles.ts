@@ -4,6 +4,7 @@ import { colors, spacing, typography } from '@/theme';
 export const styles = StyleSheet.create({
   content: {
     gap: spacing.xxl,
+    position: 'relative',
   },
   form: {
     gap: spacing.lg,

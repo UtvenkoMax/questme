@@ -1,6 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
+import { ConfettiBurst } from '@/components/ui/confetti';
 import { PageHeader } from '@/components/ui/layout';
 import { Screen } from '@/components/ui/screen';
 import { Notice } from '@/components/ui/status';
@@ -22,6 +23,7 @@ type RegisterScreenViewProps = {
   onSubmit: () => void;
   password: string;
   passwordStrength: PasswordStrength;
+  showConfetti: boolean;
   showPassword: boolean;
   submitError: string;
 };
@@ -40,11 +42,13 @@ export function RegisterScreenView({
   onSubmit,
   password,
   passwordStrength,
+  showConfetti,
   showPassword,
   submitError,
 }: RegisterScreenViewProps) {
   return (
     <Screen contentStyle={styles.content} keyboard>
+      <ConfettiBurst active={showConfetti} />
 
       <PageHeader
         eyebrow="QuestMe"
