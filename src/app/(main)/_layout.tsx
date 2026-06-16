@@ -8,8 +8,10 @@ type TabIconName = React.ComponentProps<typeof Feather>['name'];
 
 const TAB_ICONS: Record<string, TabIconName> = {
   map: 'map',
+  publish: 'send',
   profile: 'user',
   quests: 'compass',
+  videos: 'play-circle',
 };
 
 export default function MainTabsLayout() {
@@ -22,10 +24,10 @@ export default function MainTabsLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.inkSubtle,
         tabBarIcon: ({ color, focused }) => (
-          <Feather color={color} name={TAB_ICONS[route.name] ?? 'circle'} size={focused ? 22 : 20} />
+          <Feather color={color} name={TAB_ICONS[route.name] ?? 'circle'} size={focused ? 21 : 19} />
         ),
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '400',
           letterSpacing: 0,
         },
@@ -43,6 +45,20 @@ export default function MainTabsLayout() {
         options={{
           tabBarLabel: 'Квести',
           title: 'Квести',
+        }}
+      />
+      <Tabs.Screen
+        name="videos"
+        options={{
+          tabBarLabel: 'Відео',
+          title: 'Відео',
+        }}
+      />
+      <Tabs.Screen
+        name="publish"
+        options={{
+          tabBarLabel: 'Публікації',
+          title: 'Публікації',
         }}
       />
       <Tabs.Screen
