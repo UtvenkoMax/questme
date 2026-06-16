@@ -1,9 +1,9 @@
 import { StyleSheet } from 'react-native';
-import { colors, radii, spacing, typography, hitSlop, shadows } from '@/theme';
+import { colors, radii, spacing, typography, shadows } from '@/theme';
 
 export const styles = StyleSheet.create({
   content: {
-    gap: spacing.xxxl,
+    gap: spacing.xxl,
     paddingBottom: spacing.huge,
   },
   headerActions: {
@@ -14,16 +14,16 @@ export const styles = StyleSheet.create({
     ...shadows.floating,
   },
   heroCard: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.tile,
     borderWidth: 0,
     overflow: 'hidden',
   },
   heroInner: {
-    padding: spacing.xl,
+    padding: spacing.xxl,
     position: 'relative',
   },
   heroCopy: {
-    gap: spacing.md,
+    gap: spacing.lg,
     position: 'relative',
     zIndex: 2,
   },
@@ -33,7 +33,9 @@ export const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   heroPill: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1,
     borderRadius: radii.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xxs,
@@ -41,23 +43,20 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   heroPillAccent: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   heroPillText: {
+    ...typography.captionStrong,
     color: colors.white,
-    fontSize: 13,
-    fontWeight: '800',
   },
   heroTitle: {
+    ...typography.title,
     color: colors.white,
-    fontSize: 34,
-    fontWeight: '900',
-    letterSpacing: -0.5,
-    lineHeight: 40,
   },
   heroText: {
     ...typography.subtitle,
-    color: 'rgba(255,255,255,0.85)',
+    color: colors.bodyMutedOnDark,
     maxWidth: '85%',
   },
   progressWrapper: {
@@ -70,25 +69,23 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   progressLabel: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 13,
-    fontWeight: '700',
+    ...typography.caption,
+    color: colors.bodyMutedOnDark,
   },
   progressPercent: {
+    ...typography.captionStrong,
     color: colors.white,
-    fontSize: 15,
-    fontWeight: '900',
   },
   heroProgressBar: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    height: 12,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    height: 8,
   },
   metrics: {
     flexDirection: 'row',
     gap: spacing.md,
   },
   grid: {
-    gap: spacing.xxxl,
+    gap: spacing.xxl,
   },
   gridWide: {
     alignItems: 'flex-start',
@@ -105,12 +102,12 @@ export const styles = StyleSheet.create({
     minWidth: 0,
   },
   personalCard: {
-    gap: spacing.lg,
-    padding: spacing.lg,
+    gap: spacing.xl,
+    padding: spacing.xl,
   },
   personalCardDone: {
     backgroundColor: colors.successSoft,
-    borderColor: '#A7F3D0',
+    borderColor: colors.border,
   },
   personalHeader: {
     alignItems: 'flex-start',
@@ -127,10 +124,10 @@ export const styles = StyleSheet.create({
   checkIcon: {
     alignItems: 'center',
     backgroundColor: colors.primarySoft,
-    borderRadius: radii.md,
-    height: 40,
+    borderRadius: radii.pill,
+    height: 44,
     justifyContent: 'center',
-    width: 40,
+    width: 44,
   },
   checkIconDone: {
     backgroundColor: colors.success,
@@ -141,13 +138,12 @@ export const styles = StyleSheet.create({
     minWidth: 0,
   },
   personalTitle: {
+    ...typography.subtitle,
     color: colors.ink,
-    fontSize: 18,
-    fontWeight: '800',
-    lineHeight: 24,
+    fontWeight: '600',
   },
   personalTitleDone: {
-    color: colors.success,
+    color: colors.inkSubtle,
     textDecorationLine: 'line-through',
   },
   personalDescription: {
@@ -174,13 +170,12 @@ export const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   filterChipActive: {
-    backgroundColor: colors.ink,
-    borderColor: colors.ink,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   filterText: {
+    ...typography.captionStrong,
     color: colors.inkMuted,
-    fontSize: 14,
-    fontWeight: '700',
   },
   filterTextActive: {
     color: colors.white,

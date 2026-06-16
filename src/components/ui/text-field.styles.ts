@@ -1,5 +1,5 @@
 import { Platform, StyleSheet } from 'react-native';
-import { colors, radii, spacing, typography, hitSlop } from '@/theme';
+import { colors, radii, spacing, typography } from '@/theme';
 
 export const styles = StyleSheet.create({
   field: {
@@ -14,7 +14,6 @@ export const styles = StyleSheet.create({
   label: {
     ...typography.label,
     color: colors.inkMuted,
-    fontSize: 13,
   },
   labelFocused: {
     color: colors.primary,
@@ -25,22 +24,22 @@ export const styles = StyleSheet.create({
   inputWrapper: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: radii.md,
+    borderRadius: radii.pill,
     borderWidth: 1,
-    minHeight: 56,
+    minHeight: 50,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     ...Platform.select({
-      web: { transition: 'all 0.2s ease-in-out' } as any
+      web: { transition: 'border-color 0.2s ease, box-shadow 0.2s ease' } as any
     })
   },
   inputWrapperFocused: {
-    borderColor: colors.primary,
+    borderColor: colors.primaryFocus,
     backgroundColor: colors.surface,
     ...Platform.select({
       web: { boxShadow: `0 0 0 3px ${colors.primarySoft}` } as any,
-      default: { elevation: 2, shadowColor: colors.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 }
+      default: { elevation: 1, shadowColor: colors.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4 }
     })
   },
   inputWrapperError: {
@@ -49,15 +48,15 @@ export const styles = StyleSheet.create({
   },
   inputWrapperMultiline: {
     alignItems: 'flex-start',
+    borderRadius: radii.lg,
     paddingVertical: spacing.sm,
   },
   input: {
     flex: 1,
     color: colors.ink,
-    fontSize: 16,
-    fontWeight: '500',
+    ...typography.body,
     height: '100%',
-    minHeight: 56,
+    minHeight: 50,
   },
   multiline: {
     minHeight: 100,
@@ -65,15 +64,12 @@ export const styles = StyleSheet.create({
   },
   error: {
     color: colors.danger,
-    fontSize: 13,
-    fontWeight: '700',
-    lineHeight: 18,
+    ...typography.captionStrong,
     paddingHorizontal: 2,
   },
   hint: {
+    ...typography.caption,
     color: colors.inkSubtle,
-    fontSize: 13,
-    lineHeight: 18,
     paddingHorizontal: 2,
   },
 });

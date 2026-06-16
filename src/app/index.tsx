@@ -32,7 +32,7 @@ export default function EntryScreen() {
         } else {
           setDestination(pinExists ? '/login' : '/pin-code');
         }
-      } catch (e) {
+      } catch {
         // У разі помилки відправляємо на онбординг як фолбек
         if (isMounted) setDestination('/onboarding');
       } finally {

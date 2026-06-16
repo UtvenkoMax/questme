@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 
-import { colors, radii, shadows, spacing } from '@/theme';
+import { colors, radii, shadows, spacing, typography } from '@/theme';
 
 export const cardStyles = StyleSheet.create({
   card: {
@@ -28,7 +28,7 @@ export const cardStyles = StyleSheet.create({
   },
   imageShade: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(16, 24, 32, 0.12)',
+    backgroundColor: 'rgba(0, 0, 0, 0.12)',
   },
   imageOverlay: {
     alignItems: 'flex-start',
@@ -40,19 +40,18 @@ export const cardStyles = StyleSheet.create({
     top: spacing.md,
   },
   categoryBadge: {
+    backgroundColor: colors.primary,
     borderRadius: radii.pill,
     maxWidth: '58%',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },
   categoryText: {
+    ...typography.captionStrong,
     color: colors.white,
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 0,
   },
   ratingBadge: {
-    backgroundColor: 'rgba(255,255,255,0.94)',
+    backgroundColor: 'rgba(255,255,255,0.92)',
     borderRadius: radii.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
@@ -63,13 +62,12 @@ export const cardStyles = StyleSheet.create({
     gap: 4,
   },
   starIcon: {
-    color: colors.accent,
+    color: colors.primary,
     fontSize: 12,
   },
   ratingText: {
+    ...typography.captionStrong,
     color: colors.ink,
-    fontSize: 12,
-    fontWeight: '900',
   },
   content: {
     gap: spacing.md,
@@ -86,12 +84,10 @@ export const cardStyles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   title: {
+    ...typography.subtitle,
     color: colors.ink,
     flex: 1,
-    fontSize: 18,
-    fontWeight: '900',
-    letterSpacing: 0,
-    lineHeight: 23,
+    fontWeight: '600',
   },
   titleCompact: {
     fontSize: 16,
@@ -111,13 +107,12 @@ export const cardStyles = StyleSheet.create({
     width: 7,
   },
   difficultyText: {
+    ...typography.captionStrong,
     fontSize: 11,
-    fontWeight: '900',
   },
   description: {
+    ...typography.caption,
     color: colors.inkMuted,
-    fontSize: 14,
-    lineHeight: 20,
   },
   metaRow: {
     flexDirection: 'row',
@@ -125,7 +120,7 @@ export const cardStyles = StyleSheet.create({
   },
   metaItem: {
     alignItems: 'center',
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.surfacePearl,
     borderRadius: radii.sm,
     flex: 1,
     flexDirection: 'row',
@@ -135,10 +130,9 @@ export const cardStyles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   metaText: {
+    ...typography.captionStrong,
     color: colors.inkMuted,
     flex: 1,
-    fontSize: 12,
-    fontWeight: '800',
   },
   footer: {
     alignItems: 'center',
@@ -154,21 +148,20 @@ export const cardStyles = StyleSheet.create({
     minWidth: 0,
   },
   locationText: {
+    ...typography.captionStrong,
     color: colors.inkMuted,
     flex: 1,
-    fontSize: 13,
-    fontWeight: '800',
   },
   detailButton: {
     alignItems: 'center',
-    borderRadius: radii.sm,
+    backgroundColor: colors.primary,
+    borderRadius: radii.pill,
     justifyContent: 'center',
-    minHeight: 34,
+    minHeight: 36,
     paddingHorizontal: spacing.md,
   },
   detailButtonText: {
+    ...typography.captionStrong,
     color: colors.white,
-    fontSize: 13,
-    fontWeight: '900',
   },
 });

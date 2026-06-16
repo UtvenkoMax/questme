@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, radii, spacing, typography, hitSlop } from '@/theme';
+import { colors, radii, spacing, typography } from '@/theme';
 
 export const styles = StyleSheet.create({
   screen: {
@@ -8,7 +8,7 @@ export const styles = StyleSheet.create({
   },
   content: {
     alignSelf: 'center',
-    gap: spacing.xxl,
+    gap: spacing.xl,
     paddingBottom: spacing.xxxl,
     paddingTop: spacing.md,
     width: '100%',
@@ -17,7 +17,7 @@ export const styles = StyleSheet.create({
     maxWidth: 760,
   },
   hero: {
-    borderRadius: radii.xl,
+    borderRadius: radii.lg,
     height: 318,
     overflow: 'hidden',
   },
@@ -30,7 +30,7 @@ export const styles = StyleSheet.create({
   },
   heroShade: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(16, 24, 32, 0.18)',
+    backgroundColor: 'rgba(0, 0, 0, 0.14)',
   },
   heroTop: {
     alignItems: 'center',
@@ -59,9 +59,8 @@ export const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   ratingText: {
+    ...typography.captionStrong,
     color: colors.ink,
-    fontSize: 13,
-    fontWeight: '900',
   },
   difficultyBadge: {
     alignItems: 'center',
@@ -77,18 +76,15 @@ export const styles = StyleSheet.create({
     width: 8,
   },
   difficultyText: {
+    ...typography.captionStrong,
     fontSize: 12,
-    fontWeight: '900',
   },
   header: {
     gap: spacing.sm,
   },
   title: {
+    ...typography.titleCompact,
     color: colors.ink,
-    fontSize: 34,
-    fontWeight: '900',
-    letterSpacing: 0,
-    lineHeight: 40,
   },
   titleCompact: {
     fontSize: 28,
@@ -103,7 +99,7 @@ export const styles = StyleSheet.create({
     gap: spacing.md,
   },
   card: {
-    gap: spacing.lg,
+    gap: spacing.xl,
   },
   bodyText: {
     ...typography.body,
@@ -112,16 +108,15 @@ export const styles = StyleSheet.create({
   locationRow: {
     alignItems: 'center',
     backgroundColor: colors.primarySoft,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     flexDirection: 'row',
     gap: spacing.sm,
     padding: spacing.md,
   },
   locationText: {
+    ...typography.captionStrong,
     color: colors.primary,
     flex: 1,
-    fontSize: 14,
-    fontWeight: '900',
   },
   actions: {
     gap: spacing.md,

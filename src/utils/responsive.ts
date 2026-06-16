@@ -17,18 +17,18 @@ export function getResponsiveMetrics(width: number, height: number): ResponsiveM
   const shortestSide = Math.min(width, height);
   const isCompactWidth = width < 370;
   const isCompactHeight = height < 700;
-  const isWide = width >= 720 || shortestSide >= 600;
-  const gutter = clamp(Math.round(width * 0.055), isCompactWidth ? 14 : 18, isWide ? 32 : 24);
-  const listColumns = width >= 820 ? 2 : 1;
+  const isWide = width >= 734 || shortestSide >= 600;
+  const gutter = clamp(Math.round(width * 0.055), isCompactWidth ? 14 : 20, isWide ? 48 : 24);
+  const listColumns = width >= 1069 ? 2 : 1;
 
   return {
-    contentMaxWidth: isWide ? 620 : 520,
+    contentMaxWidth: isWide ? 680 : 520,
     gutter,
     isCompactHeight,
     isCompactWidth,
     isWide,
     listColumns,
-    listMaxWidth: listColumns > 1 ? 1080 : 620,
+    listMaxWidth: listColumns > 1 ? 1180 : 680,
     shortestSide,
   };
 }

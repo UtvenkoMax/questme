@@ -28,7 +28,7 @@ export function QuestCard({ compact = false, onPress, quest }: QuestCardProps) {
         <Image contentFit="cover" source={quest.image} style={styles.image} />
         <View style={styles.imageShade} />
         <View style={styles.imageOverlay}>
-          <View style={[styles.categoryBadge, { backgroundColor: quest.accentColor }]}>
+          <View style={styles.categoryBadge}>
             <Text numberOfLines={1} style={styles.categoryText}>
               {quest.category}
             </Text>
@@ -69,7 +69,7 @@ export function QuestCard({ compact = false, onPress, quest }: QuestCardProps) {
               {quest.location}
             </Text>
           </View>
-          <View style={[styles.detailButton, { backgroundColor: quest.accentColor }]}>
+          <View style={styles.detailButton}>
             <Text style={styles.detailButtonText}>Деталі</Text>
           </View>
         </View>

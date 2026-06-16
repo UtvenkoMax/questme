@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
-import { colors, radii, spacing, typography } from '@/theme';
 import { styles } from './layout.styles';
 
 type PageHeaderProps = {

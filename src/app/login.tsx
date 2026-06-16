@@ -9,8 +9,8 @@ import { PIN_LENGTH } from '@/components/auth/pin-code.types';
 import { Button } from '@/components/ui/button';
 import { Notice } from '@/components/ui/status';
 import { getUserProfile, hasPin, isBiometricEnabled, type UserProfile, verifyPin } from '@/services/auth-service';
-import { colors, spacing, typography } from '@/theme';
 import { getResponsiveMetrics } from '@/utils/responsive';
+import { styles } from './login.styles';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -184,5 +184,3 @@ export default function LoginScreen() {
     </SafeAreaView>
   );
 }
-
-import { styles } from './login.styles';

@@ -28,7 +28,7 @@ export function IconButton({ accessibilityLabel, disabled, icon, selected = fals
     if (!disabled) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       Animated.spring(scale, {
-        toValue: 0.9,
+        toValue: 0.95,
         useNativeDriver: true,
         speed: 20,
         bounciness: 8,

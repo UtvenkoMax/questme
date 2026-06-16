@@ -1,9 +1,9 @@
 import { StyleSheet } from 'react-native';
-import { colors, radii, spacing, typography, hitSlop } from '@/theme';
+import { colors, radii, spacing, typography } from '@/theme';
 
 export const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.backgroundAlt,
+    backgroundColor: colors.canvasParchment,
     flex: 1,
   },
   map: {
@@ -11,7 +11,7 @@ export const styles = StyleSheet.create({
   },
   statusCard: {
     alignItems: 'flex-start',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: 'rgba(255, 255, 255, 0.96)',
     borderColor: colors.border,
     borderRadius: radii.lg,
     borderWidth: 1,
@@ -40,14 +40,13 @@ export const styles = StyleSheet.create({
     color: colors.primary,
   },
   statusTitle: {
+    ...typography.subtitle,
     color: colors.ink,
-    fontSize: 18,
-    fontWeight: '900',
+    fontWeight: '600',
   },
   statusText: {
+    ...typography.caption,
     color: colors.inkMuted,
-    fontSize: 13,
-    lineHeight: 19,
   },
   errorContainer: {
     backgroundColor: colors.danger,
@@ -59,10 +58,8 @@ export const styles = StyleSheet.create({
     right: spacing.lg,
   },
   errorText: {
+    ...typography.captionStrong,
     color: colors.white,
-    fontSize: 13,
-    fontWeight: '800',
-    lineHeight: 18,
     textAlign: 'center',
   },
 });

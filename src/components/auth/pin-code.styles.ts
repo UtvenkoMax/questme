@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 
-import { colors, radii, spacing } from '@/theme';
+import { colors, radii, spacing, typography } from '@/theme';
 
 const KEY_SIZE = 74;
 const KEY_GAP = 16;
@@ -33,7 +33,7 @@ export const pinCodeStyles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
     paddingTop: spacing.lg,
     width: '100%',
   },
@@ -42,11 +42,9 @@ export const pinCodeStyles = StyleSheet.create({
     paddingTop: spacing.sm,
   },
   title: {
+    ...typography.titleCompact,
     color: colors.ink,
-    fontSize: 34,
-    fontWeight: '900',
     letterSpacing: 0,
-    lineHeight: 40,
     textAlign: 'center',
   },
   titleCompact: {
@@ -54,9 +52,8 @@ export const pinCodeStyles = StyleSheet.create({
     lineHeight: 34,
   },
   message: {
+    ...typography.body,
     color: colors.inkMuted,
-    fontSize: 16,
-    lineHeight: 23,
     minHeight: 24,
     textAlign: 'center',
   },
@@ -82,15 +79,14 @@ export const pinCodeStyles = StyleSheet.create({
   },
   dot: {
     borderColor: colors.borderStrong,
-    borderRadius: 8,
-    borderWidth: 2,
-    height: 16,
-    width: 16,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    height: 12,
+    width: 12,
   },
   dotCompact: {
-    borderRadius: 7,
-    height: 14,
-    width: 14,
+    height: 10,
+    width: 10,
   },
   dotFilled: {
     backgroundColor: colors.primary,
@@ -148,10 +144,8 @@ export const pinCodeStyles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   keyText: {
+    ...typography.titleCompact,
     color: colors.ink,
-    fontSize: 30,
-    fontWeight: '700',
-    lineHeight: 34,
   },
   keyTextCompact: {
     fontSize: 25,
@@ -171,9 +165,8 @@ export const pinCodeStyles = StyleSheet.create({
     opacity: 0.62,
   },
   cancelText: {
+    ...typography.captionStrong,
     color: colors.inkMuted,
-    fontSize: 13,
-    fontWeight: '900',
   },
   actions: {
     alignSelf: 'stretch',
@@ -183,37 +176,35 @@ export const pinCodeStyles = StyleSheet.create({
   primaryButton: {
     alignItems: 'center',
     backgroundColor: colors.primary,
-    borderRadius: radii.md,
+    borderRadius: radii.pill,
     justifyContent: 'center',
-    minHeight: 54,
+    minHeight: 50,
   },
   buttonDisabled: {
     opacity: 0.52,
   },
   buttonPressed: {
-    opacity: 0.82,
-    transform: [{ scale: 0.99 }],
+    opacity: 0.9,
+    transform: [{ scale: 0.95 }],
   },
   primaryButtonText: {
+    ...typography.captionStrong,
     color: colors.white,
-    fontSize: 16,
-    fontWeight: '900',
   },
   secondaryButton: {
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: radii.md,
+    borderRadius: radii.pill,
     borderWidth: 1,
     justifyContent: 'center',
-    minHeight: 52,
+    minHeight: 50,
   },
   secondaryButtonDisabled: {
     opacity: 0.52,
   },
   secondaryButtonText: {
+    ...typography.captionStrong,
     color: colors.primary,
-    fontSize: 15,
-    fontWeight: '900',
   },
 });

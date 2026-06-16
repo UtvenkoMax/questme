@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import React, { useRef } from 'react';
 import { Animated, Pressable, Text, View } from 'react-native';
 
+import { colors } from '@/theme';
 import { PIN_DIGIT_ROWS } from './pin-code.types';
 import { pinCodeStyles as styles } from './pin-code.styles';
 
@@ -99,7 +100,7 @@ function DigitKey({ compact, digit, onPress }: DigitKeyProps) {
 
   const animatedBg = backgroundColor.interpolate({
     inputRange: [0, 1],
-    outputRange: ['#F8FAFC', '#E2E8F0'] // Matches theme surfaceMuted and border
+    outputRange: [colors.surface, colors.primarySoft],
   });
 
   return (

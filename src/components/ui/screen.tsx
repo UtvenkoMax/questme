@@ -85,8 +85,8 @@ const styles = StyleSheet.create({
   content: {
     alignSelf: 'center',
     flexGrow: 1,
-    paddingBottom: 28,
-    paddingTop: 18,
+    paddingBottom: 44,
+    paddingTop: 28,
     width: '100%',
   },
 });

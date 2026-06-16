@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, radii, spacing, typography, hitSlop } from '@/theme';
+import { colors, spacing, typography } from '@/theme';
 
 export const styles = StyleSheet.create({
   content: {
@@ -16,9 +16,8 @@ export const styles = StyleSheet.create({
     opacity: 0.64,
   },
   inlineButtonText: {
+    ...typography.captionStrong,
     color: colors.primary,
-    fontSize: 13,
-    fontWeight: '900',
   },
   passwordStrength: {
     gap: spacing.sm,
@@ -28,22 +27,20 @@ export const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   strengthBar: {
-    backgroundColor: colors.border,
+    backgroundColor: colors.borderSoft,
     borderRadius: 999,
     flex: 1,
-    height: 7,
+    height: 6,
   },
   strengthBarActive: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.primary,
   },
   strengthBarStrong: {
     backgroundColor: colors.success,
   },
   helperText: {
+    ...typography.caption,
     color: colors.inkMuted,
-    fontSize: 13,
-    fontWeight: '700',
-    lineHeight: 18,
   },
   submitWrapper: {
     marginTop: spacing.md,

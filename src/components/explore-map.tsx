@@ -25,8 +25,8 @@ export function ExploreMap() {
       <View style={styles.mapPreview}>
         <View style={styles.gridLineOne} />
         <View style={styles.gridLineTwo} />
-        {MARKERS.map((marker, index) => (
-          <View key={`${marker.left}-${marker.top}`} style={[styles.marker, marker, { backgroundColor: MOCK_QUESTS[index].accentColor }]}>
+        {MARKERS.map((marker) => (
+          <View key={`${marker.left}-${marker.top}`} style={[styles.marker, marker]}>
             <Feather color={colors.white} name="map-pin" size={15} />
           </View>
         ))}
@@ -36,7 +36,7 @@ export function ExploreMap() {
         {MOCK_QUESTS.map((quest) => (
           <Card key={quest.id} style={styles.pointRow}>
             <View style={styles.pointIcon}>
-              <Feather color={quest.accentColor} name="compass" size={18} />
+              <Feather color={colors.primary} name="compass" size={18} />
             </View>
             <View style={styles.pointCopy}>
               <Text numberOfLines={1} style={styles.pointTitle}>
@@ -59,16 +59,16 @@ const styles = StyleSheet.create({
     gap: spacing.xxl,
   },
   mapPreview: {
-    backgroundColor: colors.backgroundAlt,
+    backgroundColor: colors.canvasParchment,
     borderColor: colors.border,
-    borderRadius: radii.xl,
+    borderRadius: radii.lg,
     borderWidth: 1,
     height: 310,
     overflow: 'hidden',
     position: 'relative',
   },
   gridLineOne: {
-    backgroundColor: 'rgba(32, 108, 92, 0.13)',
+    backgroundColor: colors.surface,
     height: 90,
     left: -20,
     position: 'absolute',
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '-12deg' }],
   },
   gridLineTwo: {
-    backgroundColor: 'rgba(47, 111, 237, 0.11)',
+    backgroundColor: colors.surfacePearl,
     bottom: 34,
     left: -30,
     position: 'absolute',
@@ -87,6 +87,7 @@ const styles = StyleSheet.create({
   },
   marker: {
     alignItems: 'center',
+    backgroundColor: colors.primary,
     borderColor: colors.white,
     borderRadius: radii.pill,
     borderWidth: 3,
@@ -105,7 +106,7 @@ const styles = StyleSheet.create({
   },
   pointIcon: {
     alignItems: 'center',
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.primarySoft,
     borderRadius: radii.pill,
     height: 42,
     justifyContent: 'center',
@@ -117,17 +118,15 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   pointTitle: {
+    ...typography.captionStrong,
     color: colors.ink,
-    fontSize: 16,
-    fontWeight: '900',
   },
   pointMeta: {
     ...typography.body,
     color: colors.inkMuted,
   },
   pointDuration: {
+    ...typography.captionStrong,
     color: colors.primary,
-    fontSize: 13,
-    fontWeight: '900',
   },
 });

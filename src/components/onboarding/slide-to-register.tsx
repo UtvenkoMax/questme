@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Animated, PanResponder, Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
+import { Animated, PanResponder, Text, View, type LayoutChangeEvent } from 'react-native';
 
 import { onboardingStyles as styles, THUMB_SIZE, TRACK_PADDING } from './onboarding.styles';
 

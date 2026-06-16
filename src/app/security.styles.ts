@@ -1,12 +1,12 @@
 import { StyleSheet } from 'react-native';
-import { colors, radii, spacing, typography, hitSlop } from '@/theme';
+import { colors, spacing, typography } from '@/theme';
 
 export const styles = StyleSheet.create({
   content: {
     gap: spacing.xl,
   },
   card: {
-    gap: spacing.lg,
+    gap: spacing.xl,
   },
   actionRow: {
     alignItems: 'center',
@@ -15,16 +15,16 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
     justifyContent: 'space-between',
-    paddingTop: spacing.md,
+    paddingTop: spacing.lg,
   },
   actionCopy: {
     flex: 1,
     gap: spacing.xs,
   },
   actionLabel: {
+    ...typography.body,
     color: colors.ink,
-    fontSize: 16,
-    fontWeight: '900',
+    fontWeight: '600',
   },
   actionDescription: {
     ...typography.body,

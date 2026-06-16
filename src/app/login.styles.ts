@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, radii, spacing, typography, hitSlop } from '@/theme';
+import { colors, radii, spacing, typography } from '@/theme';
 
 export const styles = StyleSheet.create({
   screen: {
@@ -24,7 +24,7 @@ export const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
     paddingTop: spacing.lg,
     width: '100%',
   },
@@ -37,15 +37,13 @@ export const styles = StyleSheet.create({
     color: colors.primary,
   },
   title: {
+    ...typography.title,
     color: colors.ink,
-    fontSize: 36,
-    fontWeight: '900',
     letterSpacing: 0,
-    lineHeight: 42,
+    textAlign: 'center',
   },
   titleCompact: {
-    fontSize: 30,
-    lineHeight: 36,
+    ...typography.titleCompact,
   },
   subtitle: {
     ...typography.subtitle,
@@ -66,15 +64,14 @@ export const styles = StyleSheet.create({
   },
   dot: {
     borderColor: colors.borderStrong,
-    borderRadius: 8,
-    borderWidth: 2,
-    height: 16,
-    width: 16,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    height: 12,
+    width: 12,
   },
   dotCompact: {
-    borderRadius: 7,
-    height: 14,
-    width: 14,
+    height: 10,
+    width: 10,
   },
   dotFilled: {
     backgroundColor: colors.primary,

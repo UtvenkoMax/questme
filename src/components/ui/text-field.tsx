@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Platform,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -10,7 +9,8 @@ import {
   type TextInputProps,
 } from 'react-native';
 
-import { colors, radii, spacing, typography, shadows } from '@/theme';
+import { colors } from '@/theme';
+import { styles } from './text-field.styles';
 
 type TextFieldProps = TextInputProps & {
   error?: string;
@@ -108,5 +108,3 @@ export function TextField({
     </View>
   );
 }
-
-import { styles } from './text-field.styles';

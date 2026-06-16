@@ -1,10 +1,10 @@
 import { StyleSheet } from 'react-native';
-import { colors, radii, spacing, typography, hitSlop } from '@/theme';
+import { colors, radii, spacing, typography } from '@/theme';
 
 export const styles = StyleSheet.create({
   base: {
     alignItems: 'center',
-    borderRadius: radii.lg,
+    borderRadius: radii.pill,
     borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.sm,
@@ -12,14 +12,14 @@ export const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   sm: {
-    minHeight: 40,
+    minHeight: 36,
     paddingHorizontal: spacing.md,
   },
   md: {
-    minHeight: 48,
+    minHeight: 44,
   },
   lg: {
-    minHeight: 56,
+    minHeight: 50,
   },
   fullWidth: {
     alignSelf: 'stretch',
@@ -29,8 +29,8 @@ export const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   secondary: {
-    backgroundColor: colors.primarySoft,
-    borderColor: colors.primarySoft,
+    backgroundColor: colors.surface,
+    borderColor: colors.primary,
   },
   ghost: {
     backgroundColor: 'transparent',
@@ -48,19 +48,17 @@ export const styles = StyleSheet.create({
     opacity: 0.52,
   },
   text: {
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: 0.2,
+    ...typography.captionStrong,
   },
   iconButton: {
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: radii.lg,
+    borderRadius: radii.pill,
     borderWidth: 1,
-    height: 48,
+    height: 44,
     justifyContent: 'center',
-    width: 48,
+    width: 44,
   },
   iconButtonSelected: {
     backgroundColor: colors.primary,

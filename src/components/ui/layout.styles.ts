@@ -1,13 +1,13 @@
 import { StyleSheet } from 'react-native';
-import { colors, radii, spacing, typography, hitSlop } from '@/theme';
+import { colors, radii, spacing, typography } from '@/theme';
 
 export const styles = StyleSheet.create({
   pageHeader: {
     alignItems: 'flex-start',
     flexDirection: 'row',
-    gap: spacing.lg,
+    gap: spacing.xl,
     justifyContent: 'space-between',
-    marginBottom: spacing.xxl,
+    marginBottom: spacing.xl,
   },
   pageHeaderCopy: {
     flex: 1,
@@ -37,87 +37,96 @@ export const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: colors.ink,
-    fontSize: 20,
-    fontWeight: '900',
+    fontSize: 24,
+    fontWeight: '600',
     letterSpacing: 0,
-    lineHeight: 25,
+    lineHeight: 29,
   },
   sectionSubtitle: {
-    color: colors.inkMuted,
-    fontSize: 14,
-    lineHeight: 20,
+    ...typography.caption,
+    color: colors.inkSubtle,
   },
   pill: {
     alignSelf: 'flex-start',
     borderRadius: radii.pill,
-    paddingHorizontal: spacing.md,
+    minHeight: 32,
+    paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
   },
   pillText: {
-    fontSize: 12,
-    fontWeight: '900',
+    ...typography.captionStrong,
   },
   defaultPill: {
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.surfacePearl,
+    borderColor: colors.borderSoft,
+    borderWidth: 1,
   },
   defaultPillText: {
     color: colors.inkMuted,
   },
   primaryPill: {
     backgroundColor: colors.primarySoft,
+    borderColor: colors.primarySoft,
+    borderWidth: 1,
   },
   primaryPillText: {
     color: colors.primary,
   },
   accentPill: {
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.primarySoft,
+    borderWidth: 1,
   },
   accentPillText: {
-    color: colors.warning,
+    color: colors.primary,
   },
   successPill: {
     backgroundColor: colors.successSoft,
+    borderColor: colors.successSoft,
+    borderWidth: 1,
   },
   successPillText: {
     color: colors.success,
   },
   dangerPill: {
     backgroundColor: colors.dangerSoft,
+    borderColor: colors.dangerSoft,
+    borderWidth: 1,
   },
   dangerPillText: {
     color: colors.danger,
   },
   progressTrack: {
-    backgroundColor: colors.border,
+    backgroundColor: colors.borderSoft,
     borderRadius: radii.pill,
-    height: 9,
+    height: 8,
     overflow: 'hidden',
   },
   progressFill: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.primary,
     borderRadius: radii.pill,
     height: '100%',
   },
   metric: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     borderWidth: 1,
     flex: 1,
     gap: spacing.xs,
     minWidth: 0,
-    padding: spacing.md,
+    padding: spacing.lg,
   },
   metricValue: {
     color: colors.ink,
-    fontSize: 19,
-    fontWeight: '900',
+    fontSize: 24,
+    fontWeight: '600',
+    lineHeight: 29,
     textAlign: 'center',
   },
   metricLabel: {
-    color: colors.inkMuted,
-    fontSize: 12,
-    fontWeight: '800',
+    ...typography.caption,
+    color: colors.inkSubtle,
     textAlign: 'center',
   },
 });

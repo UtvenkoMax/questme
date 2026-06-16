@@ -1,13 +1,12 @@
 import { Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/layout';
 import { Screen } from '@/components/ui/screen';
 import { Notice } from '@/components/ui/status';
 import { TextField } from '@/components/ui/text-field';
 import type { PasswordStrength, RegistrationErrors } from '@/services/auth-service';
-import { colors, spacing } from '@/theme';
+import { styles } from './register-screen-view.styles';
 
 type RegisterScreenViewProps = {
   canSubmit: boolean;
@@ -122,5 +121,3 @@ export function RegisterScreenView({
     </Screen>
   );
 }
-
-import { styles } from './register-screen-view.styles';

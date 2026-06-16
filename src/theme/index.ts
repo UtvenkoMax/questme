@@ -4,35 +4,43 @@ type ShadowStyle = ViewStyle & {
   boxShadow?: string;
 };
 
-// Premium, modern, tech-friendly palette
+const systemFontFamily = Platform.select({
+  web: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  default: undefined,
+});
+
 export const colors = {
-  background: '#F8FAFC', // Sleek slate background
-  backgroundAlt: '#F1F5F9',
+  background: '#F5F5F7',
+  backgroundAlt: '#FFFFFF',
   surface: '#FFFFFF',
-  surfaceMuted: '#F8FAFC',
-  ink: '#0F172A', // Deep slate for text
-  inkMuted: '#475569',
-  inkSubtle: '#94A3B8',
-  border: '#E2E8F0',
-  borderStrong: '#CBD5E1',
-  
-  // Gamified, energetic Primary (Indigo/Violet)
-  primary: '#4F46E5', // Vibrant Indigo
-  primaryDark: '#3730A3',
-  primarySoft: '#EEF2FF',
-  
-  // Accents for attention/actions
-  accent: '#F59E0B', // Warm Amber for gamification elements
-  accentSoft: '#FEF3C7',
-  blue: '#3B82F6',
-  blueSoft: '#EFF6FF',
-  danger: '#EF4444',
-  dangerSoft: '#FEF2F2',
-  success: '#10B981',
-  successSoft: '#ECFDF5',
-  warning: '#F59E0B',
-  warningSoft: '#FEF3C7',
-  
+  surfaceMuted: '#FAFAFC',
+  surfacePearl: '#FAFAFC',
+  canvas: '#FFFFFF',
+  canvasParchment: '#F5F5F7',
+  tile: '#272729',
+  tileAlt: '#2A2A2C',
+  ink: '#1D1D1F',
+  inkMuted: '#333333',
+  inkSubtle: '#7A7A7A',
+  bodyMutedOnDark: '#CCCCCC',
+  border: '#E0E0E0',
+  borderSoft: '#F0F0F0',
+  borderStrong: '#D2D2D7',
+  primary: '#0066CC',
+  primaryDark: '#0051A3',
+  primaryFocus: '#0071E3',
+  primaryOnDark: '#2997FF',
+  primarySoft: '#EAF4FF',
+  accent: '#0066CC',
+  accentSoft: '#EAF4FF',
+  blue: '#0066CC',
+  blueSoft: '#EAF4FF',
+  danger: '#B42318',
+  dangerSoft: '#FFF1F0',
+  success: '#227A55',
+  successSoft: '#F0FAF5',
+  warning: '#8A5A00',
+  warningSoft: '#FFF7E6',
   white: '#FFFFFF',
   black: '#000000',
 } as const;
@@ -41,86 +49,130 @@ export const spacing = {
   xxs: 4,
   xs: 8,
   sm: 12,
-  md: 16,
-  lg: 20,
-  xl: 24,
-  xxl: 32,
-  xxxl: 40,
-  huge: 48,
+  md: 17,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
+  xxxl: 64,
+  huge: 80,
 } as const;
 
 export const radii = {
-  xs: 8,
-  sm: 12,
-  md: 16,
-  lg: 24, // softer, more modern curves
-  xl: 32,
+  xs: 5,
+  sm: 8,
+  md: 11,
+  lg: 18,
+  xl: 24,
   pill: 999,
 } as const;
 
 export const typography = {
   eyebrow: {
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    fontFamily: systemFontFamily,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0,
+    lineHeight: 18,
   } satisfies TextStyle,
   title: {
-    fontSize: 34,
-    fontWeight: '900',
-    letterSpacing: -0.5,
-    lineHeight: 40,
+    fontFamily: systemFontFamily,
+    fontSize: 40,
+    fontWeight: '600',
+    letterSpacing: 0,
+    lineHeight: 44,
   } satisfies TextStyle,
   titleCompact: {
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-    lineHeight: 34,
+    fontFamily: systemFontFamily,
+    fontSize: 34,
+    fontWeight: '600',
+    letterSpacing: 0,
+    lineHeight: 40,
   } satisfies TextStyle,
   subtitle: {
+    fontFamily: systemFontFamily,
     fontSize: 17,
-    fontWeight: '500',
-    lineHeight: 24,
+    fontWeight: '400',
+    letterSpacing: 0,
+    lineHeight: 25,
   } satisfies TextStyle,
   body: {
-    fontSize: 15,
+    fontFamily: systemFontFamily,
+    fontSize: 17,
     fontWeight: '400',
-    lineHeight: 22,
+    letterSpacing: 0,
+    lineHeight: 25,
   } satisfies TextStyle,
   label: {
+    fontFamily: systemFontFamily,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     letterSpacing: 0,
+    lineHeight: 18,
+  } satisfies TextStyle,
+  caption: {
+    fontFamily: systemFontFamily,
+    fontSize: 14,
+    fontWeight: '400',
+    letterSpacing: 0,
+    lineHeight: 20,
+  } satisfies TextStyle,
+  captionStrong: {
+    fontFamily: systemFontFamily,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0,
+    lineHeight: 18,
+  } satisfies TextStyle,
+  nav: {
+    fontFamily: systemFontFamily,
+    fontSize: 12,
+    fontWeight: '400',
+    letterSpacing: 0,
+    lineHeight: 14,
   } satisfies TextStyle,
 } as const;
 
 export const shadows = {
   card: Platform.select<ShadowStyle>({
     android: {
-      elevation: 3,
+      elevation: 1,
     },
     web: {
-      boxShadow: '0px 10px 24px rgba(15, 23, 42, 0.06)',
+      boxShadow: '0px 14px 34px rgba(0, 0, 0, 0.04)',
     },
     default: {
-      shadowColor: '#0F172A',
+      shadowColor: '#000000',
       shadowOffset: { width: 0, height: 10 },
-      shadowOpacity: 0.06,
+      shadowOpacity: 0.04,
       shadowRadius: 24,
     },
   }),
   floating: Platform.select<ShadowStyle>({
     android: {
-      elevation: 12,
+      elevation: 4,
     },
     web: {
-      boxShadow: '0px 20px 40px rgba(79, 70, 229, 0.15)',
+      boxShadow: '0px 18px 46px rgba(0, 0, 0, 0.08)',
     },
     default: {
-      shadowColor: '#4F46E5', // Colored shadow for premium tech feel
+      shadowColor: '#000000',
       shadowOffset: { width: 0, height: 16 },
-      shadowOpacity: 0.15,
+      shadowOpacity: 0.08,
       shadowRadius: 32,
+    },
+  }),
+  product: Platform.select<ShadowStyle>({
+    android: {
+      elevation: 6,
+    },
+    web: {
+      boxShadow: '3px 5px 30px rgba(0, 0, 0, 0.22)',
+    },
+    default: {
+      shadowColor: '#000000',
+      shadowOffset: { width: 3, height: 5 },
+      shadowOpacity: 0.22,
+      shadowRadius: 30,
     },
   }),
 } as const;

@@ -10,8 +10,9 @@ import { Button, IconButton } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Metric, Pill, SectionHeader } from '@/components/ui/layout';
 import { EmptyState } from '@/components/ui/status';
-import { colors, radii, spacing, typography } from '@/theme';
+import { colors } from '@/theme';
 import { getResponsiveMetrics } from '@/utils/responsive';
+import { styles } from './[id].styles';
 
 function getQuestId(id: string | string[] | undefined) {
   return Array.isArray(id) ? id[0] : id;
@@ -57,7 +58,7 @@ export default function QuestDetailsScreen() {
           <View style={styles.heroTop}>
             <IconButton accessibilityLabel="Повернутися назад" icon="arrow-left" onPress={() => router.back()} />
             <View style={[styles.ratingBadge, { backgroundColor: colors.surface }]}>
-              <Feather color={colors.accent} name="star" size={14} />
+              <Feather color={colors.primary} name="star" size={14} />
               <Text style={styles.ratingText}>{quest.rating.toFixed(1)}</Text>
             </View>
           </View>
@@ -103,5 +104,3 @@ export default function QuestDetailsScreen() {
     </SafeAreaView>
   );
 }
-
-import { styles } from './[id].styles';

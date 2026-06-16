@@ -25,12 +25,12 @@ export default function MainTabsLayout() {
           <Feather color={color} name={TAB_ICONS[route.name] ?? 'circle'} size={focused ? 22 : 20} />
         ),
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '800',
+          fontSize: 12,
+          fontWeight: '400',
           letterSpacing: 0,
         },
         tabBarStyle: {
-          backgroundColor: colors.surface,
+          backgroundColor: colors.surfacePearl,
           borderTopColor: colors.border,
           borderTopWidth: 1,
           height: 58 + Math.max(insets.bottom, 8),

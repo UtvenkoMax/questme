@@ -63,7 +63,7 @@ export function Button({
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       Animated.parallel([
         Animated.spring(scale, {
-          toValue: 0.96,
+          toValue: 0.95,
           useNativeDriver: true,
           speed: 20,
           bounciness: 4,

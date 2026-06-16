@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, radii, spacing, typography, hitSlop } from '@/theme';
+import { colors, spacing, typography } from '@/theme';
 
 export const styles = StyleSheet.create({
   content: {
@@ -10,7 +10,7 @@ export const styles = StyleSheet.create({
     gap: spacing.md,
   },
   card: {
-    gap: spacing.lg,
+    gap: spacing.xl,
   },
   infoRow: {
     alignItems: 'center',
@@ -19,17 +19,16 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
     justifyContent: 'space-between',
-    paddingTop: spacing.md,
+    paddingTop: spacing.lg,
   },
   infoLabel: {
     ...typography.label,
     color: colors.inkMuted,
   },
   infoValue: {
+    ...typography.captionStrong,
     color: colors.ink,
     flex: 1,
-    fontSize: 15,
-    fontWeight: '900',
     textAlign: 'right',
   },
 });

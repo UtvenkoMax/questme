@@ -16,7 +16,7 @@ import {
   type UserProfile,
 } from '@/services/auth-service';
 import { getQuestProgress, getQuests, type Quest } from '@/services/quest-service';
-import { colors, spacing, typography } from '@/theme';
+import { styles } from './profile.styles';
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('uk-UA', {
@@ -166,5 +166,3 @@ function InfoRow({ label, value }: InfoRowProps) {
     </View>
   );
 }
-
-import { styles } from './profile.styles';

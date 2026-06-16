@@ -16,7 +16,7 @@ import {
   setBiometricEnabled as saveBiometricPreference,
   type UserProfile,
 } from '@/services/auth-service';
-import { colors, spacing, typography } from '@/theme';
+import { styles } from './security.styles';
 
 export default function SecurityScreen() {
   const router = useRouter();
@@ -173,5 +173,3 @@ function ActionRow({ description, disabled = false, label, onPress }: ActionRowP
     </View>
   );
 }
-
-import { styles } from './security.styles';

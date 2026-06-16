@@ -1,6 +1,6 @@
 import { Platform, StyleSheet, type ViewStyle } from 'react-native';
 
-import { colors, radii, shadows, spacing } from '@/theme';
+import { colors, radii, shadows, spacing, typography } from '@/theme';
 
 type ShadowStyle = ViewStyle & {
   boxShadow?: string;
@@ -10,15 +10,15 @@ export const THUMB_SIZE = 58;
 export const TRACK_PADDING = 4;
 
 const thumbShadow = Platform.select<ShadowStyle>({
-  android: { elevation: 4 },
+  android: { elevation: 2 },
   web: {
-    boxShadow: '0px 4px 10px rgba(16, 24, 32, 0.18)',
+    boxShadow: '0px 8px 18px rgba(0, 0, 0, 0.10)',
   },
   default: {
-    shadowColor: '#101820',
-    shadowOffset: { height: 4, width: 0 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
+    shadowColor: '#000000',
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 18,
   },
 });
 
@@ -45,21 +45,21 @@ export const onboardingStyles = StyleSheet.create({
   panel: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: radii.lg,
+    borderTopRightRadius: radii.lg,
     borderWidth: 1,
     bottom: 0,
-    gap: spacing.lg,
+    gap: spacing.xl,
     left: 0,
     paddingBottom: spacing.sm,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.xxl,
     position: 'absolute',
     right: 0,
     ...shadows.floating,
   },
   panelCompact: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: radii.lg,
+    borderTopRightRadius: radii.lg,
     gap: spacing.md,
     paddingTop: spacing.lg,
   },
@@ -70,27 +70,23 @@ export const onboardingStyles = StyleSheet.create({
     width: 46,
   },
   title: {
+    ...typography.titleCompact,
     color: colors.ink,
-    fontSize: 28,
-    fontWeight: '900',
     letterSpacing: 0,
-    lineHeight: 34,
     marginBottom: spacing.sm,
   },
   titleCompact: {
-    fontSize: 23,
-    lineHeight: 29,
+    fontSize: 28,
+    lineHeight: 34,
     marginBottom: spacing.xs,
   },
   subtitle: {
+    ...typography.body,
     color: colors.inkMuted,
-    fontSize: 15,
-    lineHeight: 22,
     marginBottom: spacing.lg,
   },
   subtitleCompact: {
-    fontSize: 14,
-    lineHeight: 20,
+    ...typography.caption,
     marginBottom: spacing.md,
   },
   dots: {
@@ -110,28 +106,26 @@ export const onboardingStyles = StyleSheet.create({
   },
   nextButton: {
     alignItems: 'center',
-    borderRadius: radii.md,
+    borderRadius: radii.pill,
     justifyContent: 'center',
-    minHeight: 54,
+    minHeight: 50,
   },
   nextButtonCompact: {
     minHeight: 48,
   },
   nextButtonPressed: {
-    opacity: 0.84,
-    transform: [{ scale: 0.99 }],
+    opacity: 0.9,
+    transform: [{ scale: 0.95 }],
   },
   nextButtonText: {
+    ...typography.captionStrong,
     color: colors.white,
-    fontSize: 16,
-    fontWeight: '900',
-    letterSpacing: 0,
   },
   finalActions: {
     gap: spacing.md,
   },
   track: {
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.surfacePearl,
     borderRadius: radii.pill,
     borderWidth: 1,
     height: 64,
@@ -147,8 +141,7 @@ export const onboardingStyles = StyleSheet.create({
     top: TRACK_PADDING,
   },
   trackText: {
-    fontSize: 15,
-    fontWeight: '900',
+    ...typography.captionStrong,
     textAlign: 'center',
   },
   thumb: {
@@ -164,18 +157,17 @@ export const onboardingStyles = StyleSheet.create({
   thumbArrow: {
     color: colors.white,
     fontSize: 25,
-    fontWeight: '900',
+    fontWeight: '600',
     lineHeight: 29,
   },
   fallbackButton: {
     alignItems: 'center',
-    borderRadius: radii.md,
+    borderRadius: radii.pill,
     borderWidth: 1,
     justifyContent: 'center',
-    minHeight: 52,
+    minHeight: 50,
   },
   fallbackButtonText: {
-    fontSize: 15,
-    fontWeight: '900',
+    ...typography.captionStrong,
   },
 });

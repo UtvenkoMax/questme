@@ -65,15 +65,14 @@ export function LoadingState({ text = 'Завантажуємо...' }: { text?: 
 const styles = StyleSheet.create({
   notice: {
     alignItems: 'flex-start',
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     flexDirection: 'row',
     gap: spacing.sm,
-    padding: spacing.md,
+    padding: spacing.lg,
   },
   noticeText: {
+    ...typography.captionStrong,
     flex: 1,
-    fontSize: 14,
-    fontWeight: '800',
     lineHeight: 20,
   },
   empty: {
@@ -82,8 +81,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radii.lg,
     borderWidth: 1,
-    gap: spacing.sm,
-    padding: spacing.xxl,
+    gap: spacing.md,
+    padding: spacing.xl,
   },
   emptyIcon: {
     alignItems: 'center',
@@ -95,8 +94,9 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     color: colors.ink,
-    fontSize: 18,
-    fontWeight: '900',
+    fontSize: 24,
+    fontWeight: '600',
+    lineHeight: 29,
     textAlign: 'center',
   },
   emptyText: {

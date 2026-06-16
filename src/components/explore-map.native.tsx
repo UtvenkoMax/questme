@@ -5,7 +5,8 @@ import { Text, View } from 'react-native';
 import MapView, { Marker, PROVIDER_DEFAULT, type Region } from 'react-native-maps';
 
 import { MOCK_QUESTS } from '@/components/home/quest.types';
-import { colors, radii, spacing, typography } from '@/theme';
+import { colors } from '@/theme';
+import { styles } from './explore-map.native.styles';
 
 const KYIV_REGION: Region = {
   latitude: 50.4501,
@@ -88,7 +89,7 @@ export function ExploreMap() {
             coordinate={coordinate}
             description={quest.description}
             key={quest.id}
-            pinColor={quest.accentColor}
+            pinColor={colors.primary}
             title={quest.title}
           />
         ))}
@@ -113,5 +114,3 @@ export function ExploreMap() {
     </View>
   );
 }
-
-import { styles } from './explore-map.native.styles';
