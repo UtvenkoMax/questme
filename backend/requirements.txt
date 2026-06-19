@@ -1,0 +1,24 @@
+# Core
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+pydantic==2.10.0
+pydantic-settings==2.7.0
+
+# Auth
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.17
+
+# HTTP client (for external API calls)
+httpx==0.28.0
+
+# ML (lightweight — no torch/tensorflow)
+scikit-learn==1.6.0
+numpy==2.2.0
+
+# Optional — uncomment when connecting real DB/Redis:
+# sqlalchemy==2.0.36
+# asyncpg==0.30.0
+# alembic==1.14.0
+# redis==5.2.0
+# Pillow==11.1.0

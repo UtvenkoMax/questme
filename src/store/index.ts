@@ -1,11 +1,28 @@
-import { create } from 'zustand';
+/**
+ * Zustand Store — Barrel Exports
+ *
+ * All store slices are split by domain for optimized re-renders:
+ * - authStore: Authentication, profile, session
+ * - questStore: Personal quests, gamification, filters
+ * - uiStore: Modals, toasts, UI state
+ * - mapStore: Geolocation, tracking, map layers
+ */
 
-interface AppState {
-  isAuthenticated: boolean;
-  setAuthenticated: (value: boolean) => void;
-}
+export { useAuthStore, selectIsAuthenticated, selectProfile, selectAuthStatus } from './auth-store';
+export type { AuthStore } from './auth-store';
 
-export const useAppStore = create<AppState>((set) => ({
-  isAuthenticated: false,
-  setAuthenticated: (value) => set({ isAuthenticated: value }),
-}));
+export { useQuestStore, selectFilteredQuests, selectQuestById, selectCompletionStats } from './quest-store';
+export type { QuestStore } from './quest-store';
+
+export { useUIStore, selectActiveModal, selectToasts } from './ui-store';
+export type { UIStore } from './ui-store';
+
+export {
+  useMapStore,
+  haversineDistance,
+  isInsideGeofence,
+  selectUserLocation,
+  selectNearbyQuests,
+  selectIsTracking,
+} from './map-store';
+export type { MapStore } from './map-store';

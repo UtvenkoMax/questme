@@ -3,10 +3,12 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { Text, View, StyleSheet } from 'react-native';
 import { SafeAreaProvider, initialWindowMetrics, SafeAreaView } from 'react-native-safe-area-context';
+import { QueryClientProvider } from '@tanstack/react-query';
 
 import { FaceIdStartupPrompt } from '@/components/auth/face-id-startup-prompt';
 import { AppPreferencesProvider, useAppTheme } from '@/components/providers/app-preferences';
 import { Button } from '@/components/ui/button';
+import { queryClient } from '@/lib/query-client';
 import { colors, spacing, typography } from '@/theme';
 import '@/locales/i18n';
 
@@ -17,11 +19,13 @@ SplashScreen.setOptions({
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-      <AppPreferencesProvider>
-        <RootStack />
-      </AppPreferencesProvider>
-    </SafeAreaProvider>
+    <QueryClientProvider client={queryClient}>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+        <AppPreferencesProvider>
+          <RootStack />
+        </AppPreferencesProvider>
+      </SafeAreaProvider>
+    </QueryClientProvider>
   );
 }
 
