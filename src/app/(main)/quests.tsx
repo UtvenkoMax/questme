@@ -1,14 +1,17 @@
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { View, useWindowDimensions } from 'react-native';
+import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 
+import { MOCK_QUESTS } from '@/components/home/quest.types';
 import { PersonalQuestCard } from '@/components/home/personal-quest-card';
 import { QuestHero } from '@/components/home/quest-hero';
 import { ExploreSection } from '@/components/home/explore-section';
 import { Button, IconButton } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { ConfettiBurst } from '@/components/ui/confetti';
 import { PageHeader, SectionHeader } from '@/components/ui/layout';
+import { ProgressRing } from '@/components/ui/progress-ring';
 import { Screen } from '@/components/ui/screen';
 import { EmptyState, LoadingState, Notice } from '@/components/ui/status';
 import { TextField } from '@/components/ui/text-field';
@@ -40,6 +43,7 @@ export default function QuestsScreen() {
   const [message, setMessage] = useState<Message | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const loadDashboard = useCallback(async () => {
     setIsLoading(true);
@@ -62,6 +66,31 @@ export default function QuestsScreen() {
   );
 
   const progress = useMemo(() => getQuestProgress(quests), [quests]);
+  const activeQuests = quests.filter((quest) => !quest.completed);
+  const nextPersonalQuest = activeQuests[0];
+  const nearestQuest = MOCK_QUESTS[0];
+  const streakDays = progress.completedCount ? Math.min(progress.completedCount + 2, 14) : 0;
+
+  const runQuickAction = (action: 'nearby' | 'continue' | 'publish') => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+
+    if (action === 'nearby') {
+      router.push('/map');
+      return;
+    }
+
+    if (action === 'publish') {
+      router.push('/publish');
+      return;
+    }
+
+    setMessage({
+      text: nextPersonalQuest
+        ? `Продовжуємо місію: ${nextPersonalQuest.title}.`
+        : 'Активних персональних місій немає. Створіть нову або відкрийте квести поруч.',
+      tone: 'neutral',
+    });
+  };
 
   const submitQuest = async () => {
     if (title.trim().length < 3) {
@@ -93,6 +122,8 @@ export default function QuestsScreen() {
       
       if (quest?.completed) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setShowCelebration(true);
+        setTimeout(() => setShowCelebration(false), 1600);
       } else {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
@@ -116,9 +147,11 @@ export default function QuestsScreen() {
 
   return (
     <Screen contentStyle={styles.content} wide>
+      <ConfettiBurst active={showCelebration} />
       <PageHeader
         action={
           <View style={styles.headerActions}>
+            <IconButton accessibilityLabel="Повідомлення" icon="bell" onPress={() => router.push('/notifications' as never)} />
             <IconButton accessibilityLabel="Профіль" icon="user" onPress={() => router.push('/profile')} />
             <IconButton accessibilityLabel="Безпека" icon="shield" onPress={() => router.push('/security')} />
           </View>
@@ -127,6 +160,46 @@ export default function QuestsScreen() {
         subtitle="Твоя персональна мапа досягнень. Плануй, досліджуй, перемагай."
         title={profile ? `Привіт, ${profile.name} 👋` : 'Твої квести'}
       />
+
+      <View style={[styles.dashboardGrid, layout.isWide && styles.dashboardGridWide]}>
+        <Card style={styles.dashboardCard}>
+          <View style={styles.dashboardTop}>
+            <View style={styles.dashboardCopy}>
+              <Text style={styles.dashboardEyebrow}>Сьогодні</Text>
+              <Text style={styles.dashboardTitle}>План квестів</Text>
+              <Text style={styles.dashboardText}>
+                {nextPersonalQuest
+                  ? `Наступна місія: ${nextPersonalQuest.title}`
+                  : `Найближчий маршрут: ${nearestQuest.title}`}
+              </Text>
+            </View>
+            <ProgressRing
+              label="готово"
+              percent={progress.completionPercent}
+              size={104}
+              value={`${progress.completionPercent}%`}
+            />
+          </View>
+          <View style={styles.statGrid}>
+            <DashboardStat label="Активні" value={activeQuests.length} />
+            <DashboardStat label="XP" value={progress.totalPoints} />
+            <DashboardStat label="Серія" value={`${streakDays} дн.`} />
+            <DashboardStat label="Поруч" value={nearestQuest.distance} />
+          </View>
+        </Card>
+
+        <Card style={styles.quickCard}>
+          <SectionHeader
+            subtitle="Найчастіші дії без зайвих переходів"
+            title="Швидкий старт"
+          />
+          <View style={styles.quickActions}>
+            <QuickAction icon="map-pin" label="Почати поруч" onPress={() => runQuickAction('nearby')} />
+            <QuickAction icon="play" label="Продовжити" onPress={() => runQuickAction('continue')} />
+            <QuickAction icon="send" label="Створити квест" onPress={() => runQuickAction('publish')} />
+          </View>
+        </Card>
+      </View>
 
       <QuestHero progress={progress} />
 
@@ -142,6 +215,7 @@ export default function QuestsScreen() {
             ))
           ) : (
             <EmptyState
+              action={<Button fullWidth={false} icon="plus" onPress={() => runQuickAction('publish')} title="Створити перший квест" />}
               icon="target"
               text="Поставте першу ціль, щоб почати накопичувати XP та досягнення."
               title="Місій немає"
@@ -177,5 +251,34 @@ export default function QuestsScreen() {
 
       <ExploreSection isPhoneSize={isPhoneSize} layout={layout} />
     </Screen>
+  );
+}
+
+type DashboardStatProps = {
+  label: string;
+  value: string | number;
+};
+
+function DashboardStat({ label, value }: DashboardStatProps) {
+  return (
+    <View style={styles.dashboardStat}>
+      <Text numberOfLines={1} style={styles.dashboardStatValue}>{value}</Text>
+      <Text numberOfLines={1} style={styles.dashboardStatLabel}>{label}</Text>
+    </View>
+  );
+}
+
+type QuickActionProps = {
+  icon: React.ComponentProps<typeof IconButton>['icon'];
+  label: string;
+  onPress: () => void;
+};
+
+function QuickAction({ icon, label, onPress }: QuickActionProps) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.quickAction, pressed && styles.pressed]}>
+      <IconButton accessibilityLabel={label} icon={icon} onPress={onPress} />
+      <Text style={styles.quickActionText}>{label}</Text>
+    </Pressable>
   );
 }

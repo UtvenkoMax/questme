@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
+import { useAppTheme } from '@/components/providers/app-preferences';
+
 import { styles } from './layout.styles';
 
 type PageHeaderProps = {
@@ -11,12 +13,14 @@ type PageHeaderProps = {
 };
 
 export function PageHeader({ action, eyebrow, subtitle, title }: PageHeaderProps) {
+  const theme = useAppTheme();
+
   return (
     <View style={styles.pageHeader}>
       <View style={styles.pageHeaderCopy}>
         {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
-        <Text style={styles.title}>{title}</Text>
-        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        <Text style={[styles.title, { color: theme.colors.ink }]}>{title}</Text>
+        {subtitle ? <Text style={[styles.subtitle, { color: theme.colors.inkMuted }]}>{subtitle}</Text> : null}
       </View>
       {action}
     </View>
@@ -30,11 +34,13 @@ type SectionHeaderProps = {
 };
 
 export function SectionHeader({ action, subtitle, title }: SectionHeaderProps) {
+  const theme = useAppTheme();
+
   return (
     <View style={styles.sectionHeader}>
       <View style={styles.sectionCopy}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        {subtitle ? <Text style={styles.sectionSubtitle}>{subtitle}</Text> : null}
+        <Text style={[styles.sectionTitle, { color: theme.colors.ink }]}>{title}</Text>
+        {subtitle ? <Text style={[styles.sectionSubtitle, { color: theme.colors.inkSubtle }]}>{subtitle}</Text> : null}
       </View>
       {action}
     </View>
@@ -90,12 +96,14 @@ type MetricProps = {
 };
 
 export function Metric({ label, value }: MetricProps) {
+  const theme = useAppTheme();
+
   return (
-    <View style={styles.metric}>
-      <Text numberOfLines={1} style={styles.metricValue}>
+    <View style={[styles.metric, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+      <Text numberOfLines={1} style={[styles.metricValue, { color: theme.colors.ink }]}>
         {value}
       </Text>
-      <Text numberOfLines={1} style={styles.metricLabel}>
+      <Text numberOfLines={1} style={[styles.metricLabel, { color: theme.colors.inkSubtle }]}>
         {label}
       </Text>
     </View>

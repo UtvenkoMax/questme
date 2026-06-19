@@ -101,6 +101,180 @@ export const styles = StyleSheet.create({
   card: {
     gap: spacing.xl,
   },
+  gearItem: {
+    alignItems: 'center',
+    backgroundColor: colors.surfacePearl,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  gearList: {
+    gap: spacing.sm,
+  },
+  gearText: {
+    ...typography.captionStrong,
+    color: colors.ink,
+    flex: 1,
+  },
+  infoCard: {
+    flex: 1,
+    gap: spacing.lg,
+    minWidth: 0,
+  },
+  infoGrid: {
+    gap: spacing.lg,
+  },
+  infoGridWide: {
+    flexDirection: 'row',
+  },
+  inviteCard: {
+    alignItems: 'center',
+    backgroundColor: colors.primarySoft,
+    borderRadius: radii.lg,
+    flexDirection: 'row',
+    gap: spacing.md,
+    justifyContent: 'space-between',
+    padding: spacing.lg,
+  },
+  inviteText: {
+    ...typography.caption,
+    color: colors.primary,
+  },
+  inviteTitle: {
+    ...typography.captionStrong,
+    color: colors.primary,
+  },
+  memberAvatar: {
+    alignItems: 'center',
+    backgroundColor: colors.primarySoft,
+    borderRadius: radii.pill,
+    height: 38,
+    justifyContent: 'center',
+    width: 38,
+  },
+  memberAvatarText: {
+    ...typography.captionStrong,
+    color: colors.primary,
+  },
+  memberName: {
+    ...typography.captionStrong,
+    color: colors.ink,
+    flex: 1,
+  },
+  progressCard: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.xl,
+  },
+  progressCopy: {
+    flex: 1,
+    gap: spacing.md,
+    minWidth: 0,
+  },
+  rewardCopy: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  rewardIcon: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: radii.pill,
+    height: 56,
+    justifyContent: 'center',
+    width: 56,
+  },
+  rewardPreview: {
+    alignItems: 'center',
+    backgroundColor: colors.surfacePearl,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
+  rewardText: {
+    ...typography.caption,
+    color: colors.inkMuted,
+  },
+  rewardTitle: {
+    ...typography.subtitle,
+    color: colors.ink,
+    fontWeight: '700',
+  },
+  statusArrived: {
+    backgroundColor: colors.successSoft,
+  },
+  statusPill: {
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  statusPillText: {
+    ...typography.captionStrong,
+    color: colors.inkMuted,
+  },
+  statusReady: {
+    backgroundColor: colors.surfacePearl,
+  },
+  statusWalking: {
+    backgroundColor: colors.warningSoft,
+  },
+  teamList: {
+    gap: spacing.sm,
+  },
+  teamRow: {
+    alignItems: 'center',
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    paddingTop: spacing.md,
+  },
+  timeline: {
+    gap: spacing.lg,
+  },
+  timelineCopy: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  timelineDot: {
+    alignItems: 'center',
+    backgroundColor: colors.surfacePearl,
+    borderColor: colors.border,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
+  },
+  timelineDotActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  timelineDotText: {
+    ...typography.captionStrong,
+    color: colors.inkMuted,
+  },
+  timelineDotTextActive: {
+    color: colors.white,
+  },
+  timelineItem: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  timelineText: {
+    ...typography.caption,
+    color: colors.inkMuted,
+  },
+  timelineTitle: {
+    ...typography.captionStrong,
+    color: colors.ink,
+  },
   bodyText: {
     ...typography.body,
     color: colors.inkMuted,

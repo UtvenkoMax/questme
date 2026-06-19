@@ -1,6 +1,8 @@
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import * as Haptics from 'expo-haptics';
 import { Pressable, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { colors } from '@/theme';
 
@@ -16,22 +18,43 @@ type QuestCardProps = {
 
 export function QuestCard({ compact = false, onPress, quest }: QuestCardProps) {
   const difficultyColor = DIFFICULTY_COLORS[quest.difficulty];
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+  const openQuest = () => {
+    Haptics.selectionAsync().catch(() => {});
+    onPress();
+  };
 
   return (
-    <Pressable
-      accessibilityHint="Відкриває деталі маршруту"
-      accessibilityLabel={`${quest.title}. ${quest.category}, ${quest.duration}, ${quest.distance}`}
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
+    <Animated.View style={animatedStyle}>
+      <Pressable
+        accessibilityHint="Відкриває деталі маршруту"
+        accessibilityLabel={`${quest.title}. ${quest.category}, ${quest.duration}, ${quest.distance}`}
+        accessibilityRole="button"
+        onPress={openQuest}
+        onPressIn={() => {
+          scale.value = withSpring(0.975, { damping: 16, stiffness: 240 });
+        }}
+        onPressOut={() => {
+          scale.value = withSpring(1, { damping: 14, stiffness: 220 });
+        }}
+        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
       <View style={[styles.imageContainer, compact && styles.imageContainerCompact]}>
         <Image contentFit="cover" source={quest.image} style={styles.image} />
         <View style={styles.imageShade} />
         <View style={styles.imageOverlay}>
-          <View style={styles.categoryBadge}>
-            <Text numberOfLines={1} style={styles.categoryText}>
-              {quest.category}
-            </Text>
+          <View style={styles.badgeStack}>
+            <View style={styles.categoryBadge}>
+              <Text numberOfLines={1} style={styles.categoryText}>
+                {quest.category}
+              </Text>
+            </View>
+            <View style={styles.smallBadgeRow}>
+              {quest.isNew ? <Text style={styles.smallBadge}>Новий</Text> : null}
+              {quest.isTeamQuest ? <Text style={styles.smallBadge}>Команда</Text> : null}
+            </View>
           </View>
           <View style={styles.ratingBadge}>
             <StarRating rating={quest.rating} />
@@ -74,7 +97,8 @@ export function QuestCard({ compact = false, onPress, quest }: QuestCardProps) {
           </View>
         </View>
       </View>
-    </Pressable>
+      </Pressable>
+    </Animated.View>
   );
 }
 

@@ -10,6 +10,91 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
   },
+  dashboardCard: {
+    flex: 1.25,
+    gap: spacing.lg,
+  },
+  dashboardCopy: {
+    flex: 1,
+    gap: spacing.xs,
+    minWidth: 0,
+  },
+  dashboardEyebrow: {
+    ...typography.eyebrow,
+    color: colors.primary,
+  },
+  dashboardGrid: {
+    gap: spacing.lg,
+  },
+  dashboardGridWide: {
+    alignItems: 'stretch',
+    flexDirection: 'row',
+  },
+  dashboardStat: {
+    backgroundColor: colors.surfacePearl,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flex: 1,
+    gap: spacing.xs,
+    minWidth: 112,
+    padding: spacing.md,
+  },
+  dashboardStatLabel: {
+    ...typography.caption,
+    color: colors.inkSubtle,
+  },
+  dashboardStatValue: {
+    color: colors.ink,
+    fontSize: 22,
+    fontWeight: '700',
+    lineHeight: 27,
+  },
+  dashboardText: {
+    ...typography.body,
+    color: colors.inkMuted,
+  },
+  dashboardTitle: {
+    color: colors.ink,
+    fontSize: 28,
+    fontWeight: '700',
+    lineHeight: 33,
+  },
+  dashboardTop: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.lg,
+  },
+  quickAction: {
+    alignItems: 'center',
+    backgroundColor: colors.surfacePearl,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flex: 1,
+    gap: spacing.sm,
+    minWidth: 120,
+    padding: spacing.md,
+  },
+  quickActionText: {
+    ...typography.captionStrong,
+    color: colors.ink,
+    textAlign: 'center',
+  },
+  quickActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  quickCard: {
+    flex: 0.85,
+    gap: spacing.lg,
+  },
+  statGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
   heroWrapper: {
     ...shadows.floating,
   },
@@ -21,6 +106,27 @@ export const styles = StyleSheet.create({
   heroInner: {
     padding: spacing.xxl,
     position: 'relative',
+  },
+  heroGlowOne: {
+    backgroundColor: 'rgba(38, 229, 255, 0.18)',
+    borderRadius: 999,
+    height: 180,
+    position: 'absolute',
+    right: -54,
+    top: -62,
+    width: 180,
+  },
+  heroGlowTwo: {
+    backgroundColor: 'rgba(55, 214, 127, 0.18)',
+    borderRadius: 999,
+    bottom: -72,
+    height: 220,
+    left: -68,
+    position: 'absolute',
+    width: 220,
+  },
+  heroGradient: {
+    ...StyleSheet.absoluteFillObject,
   },
   heroCopy: {
     gap: spacing.lg,
@@ -182,6 +288,57 @@ export const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.78,
+  },
+  searchChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  searchPanel: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
+  sortChip: {
+    borderColor: colors.border,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  sortChipActive: {
+    backgroundColor: colors.ink,
+    borderColor: colors.ink,
+  },
+  sortLabel: {
+    ...typography.captionStrong,
+    color: colors.inkMuted,
+  },
+  sortRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  sortText: {
+    ...typography.captionStrong,
+    color: colors.inkMuted,
+  },
+  sortTextActive: {
+    color: colors.white,
+  },
+  suggestionChip: {
+    backgroundColor: colors.primarySoft,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  suggestionText: {
+    ...typography.captionStrong,
+    color: colors.primary,
   },
   routeGrid: {
     gap: spacing.lg,

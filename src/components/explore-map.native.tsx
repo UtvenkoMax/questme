@@ -1,10 +1,14 @@
 import { Feather } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import * as Location from 'expo-location';
-import { useEffect, useMemo, useState } from 'react';
-import { Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import MapView, { Circle, Marker, Polyline, PROVIDER_DEFAULT, type Region } from 'react-native-maps';
 
 import { MOCK_QUESTS, type Quest, type QuestCoordinate } from '@/components/home/quest.types';
+import { Button } from '@/components/ui/button';
+import { ProgressBar } from '@/components/ui/layout';
 import { getJsonItem, setJsonItem } from '@/services/app-storage';
 import { colors } from '@/theme';
 import { styles } from './explore-map.native.styles';
@@ -72,6 +76,8 @@ function createMarkersFromCache(cache: CachedMapState): QuestMarker[] {
 }
 
 export function ExploreMap() {
+  const { width } = useWindowDimensions();
+  const successProgress = useRef(new Animated.Value(0)).current;
   const [region, setRegion] = useState<Region>(KYIV_REGION);
   const [hasUserLocation, setHasUserLocation] = useState(false);
   const [userCoordinate, setUserCoordinate] = useState<QuestCoordinate | null>(null);
@@ -88,6 +94,19 @@ export function ExploreMap() {
   const geofenceDistance = userCoordinate && selectedMarker ? getDistanceMeters(userCoordinate, selectedMarker.quest.coordinate) : null;
   const isInsideGeofence =
     selectedMarker && geofenceDistance != null && geofenceDistance <= selectedMarker.quest.geofenceRadiusMeters;
+  const selectedIndex = Math.max(
+    questMarkers.findIndex((marker) => marker.quest.id === selectedMarker?.quest.id),
+    0
+  );
+
+  useEffect(() => {
+    Animated.timing(successProgress, {
+      duration: 420,
+      easing: Easing.out(Easing.cubic),
+      toValue: isInsideGeofence ? 1 : 0,
+      useNativeDriver: true,
+    }).start();
+  }, [isInsideGeofence, successProgress]);
 
   useEffect(() => {
     let isMounted = true;
@@ -165,6 +184,18 @@ export function ExploreMap() {
     };
   }, []);
 
+  const selectSheetQuest = (index: number) => {
+    const marker = questMarkers[index];
+    if (!marker) return;
+
+    setSelectedQuestId(marker.quest.id);
+    Haptics.selectionAsync().catch(() => {});
+  };
+
+  const startSelectedQuest = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+  };
+
   return (
     <View style={styles.container}>
       <MapView
@@ -223,6 +254,66 @@ export function ExploreMap() {
           ) : null}
         </View>
       </View>
+
+      <BlurView intensity={70} tint="light" style={styles.bottomSheet}>
+        <View style={styles.sheetHandle} />
+        <ScrollView
+          horizontal
+          onMomentumScrollEnd={(event) => {
+            const cardWidth = Math.max(width - 56, 280);
+            selectSheetQuest(Math.round(event.nativeEvent.contentOffset.x / cardWidth));
+          }}
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          snapToInterval={Math.max(width - 56, 280)}
+          decelerationRate="fast">
+          {questMarkers.map(({ distanceMeters, quest }, index) => {
+            const selected = index === selectedIndex;
+            const routePercent = selected ? 33 : 0;
+
+            return (
+              <View key={quest.id} style={[styles.sheetCard, { width: Math.max(width - 56, 280) }, selected && styles.sheetCardSelected]}>
+                <View style={styles.sheetHeader}>
+                  <View style={styles.sheetIcon}>
+                    <Feather color={colors.primary} name="map-pin" size={18} />
+                  </View>
+                  <View style={styles.sheetCopy}>
+                    <Text numberOfLines={1} style={styles.sheetTitle}>{quest.title}</Text>
+                    <Text numberOfLines={1} style={styles.sheetMeta}>
+                      {formatDistance(distanceMeters)} · {quest.duration} · {quest.route.length} точки
+                    </Text>
+                  </View>
+                </View>
+                <ProgressBar percent={routePercent} />
+                <View style={styles.sheetActions}>
+                  <Button fullWidth={false} icon="play" onPress={startSelectedQuest} size="sm" title="Почати" />
+                  <Button fullWidth={false} icon="info" onPress={() => setSelectedQuestId(quest.id)} size="sm" title="На мапі" variant="secondary" />
+                </View>
+              </View>
+            );
+          })}
+        </ScrollView>
+      </BlurView>
+
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.geofenceToast,
+          {
+            opacity: successProgress,
+            transform: [
+              {
+                translateY: successProgress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [18, 0],
+                }),
+              },
+            ],
+          },
+        ]}>
+        <Feather color={colors.white} name="check-circle" size={18} />
+        <Text style={styles.geofenceToastText}>Точку підтверджено</Text>
+      </Animated.View>
 
       {errorMessage ? (
         <View accessibilityLiveRegion="polite" style={styles.errorContainer}>

@@ -1,5 +1,7 @@
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Text, View } from 'react-native';
+import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 
 import { Card } from '@/components/ui/card';
 import { ProgressBar } from '@/components/ui/layout';
@@ -23,7 +25,15 @@ export function QuestHero({ progress }: QuestHeroProps) {
     <View style={styles.heroWrapper}>
       <Card style={styles.heroCard} padded={false}>
         <View style={styles.heroInner}>
-          <View style={styles.heroCopy}>
+          <LinearGradient
+            colors={['#06162F', '#0A4E9A', '#0D8BBD']}
+            end={{ x: 1, y: 1 }}
+            start={{ x: 0, y: 0 }}
+            style={styles.heroGradient}
+          />
+          <Animated.View entering={FadeInRight.duration(700)} style={styles.heroGlowOne} />
+          <Animated.View entering={FadeInDown.duration(800).delay(120)} style={styles.heroGlowTwo} />
+          <Animated.View entering={FadeInDown.duration(520)} style={styles.heroCopy}>
             <View style={styles.heroPillContainer}>
               <View style={styles.heroPill}>
                 <Text style={styles.heroPillText}>Рівень {progress.level}</Text>
@@ -45,7 +55,7 @@ export function QuestHero({ progress }: QuestHeroProps) {
               </View>
               <ProgressBar percent={progress.levelProgressPercent} style={styles.heroProgressBar} />
             </View>
-          </View>
+          </Animated.View>
         </View>
       </Card>
     </View>

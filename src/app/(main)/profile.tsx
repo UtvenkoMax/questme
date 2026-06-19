@@ -1,3 +1,4 @@
+import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
@@ -7,6 +8,7 @@ import { PIN_LENGTH } from '@/components/auth/pin-code.types';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Metric, PageHeader, SectionHeader } from '@/components/ui/layout';
+import { ProgressRing } from '@/components/ui/progress-ring';
 import { Screen } from '@/components/ui/screen';
 import { LoadingState, Notice } from '@/components/ui/status';
 import { TextField } from '@/components/ui/text-field';
@@ -21,7 +23,9 @@ import {
   verifyPin,
   type UserProfile,
 } from '@/services/auth-service';
+import { getAchievements } from '@/services/achievement-service';
 import { getQuestProgress, getQuests, type Quest } from '@/services/quest-service';
+import { colors } from '@/theme';
 import { styles } from './profile.styles';
 
 function formatDate(value: string) {
@@ -82,6 +86,15 @@ export default function ProfileScreen() {
 
   const errors = useMemo(() => validateProfile({ email, name }), [email, name]);
   const progress = useMemo(() => getQuestProgress(quests), [quests]);
+  const achievements = useMemo(() => getAchievements(quests), [quests]);
+  const completedQuests = quests.filter((quest) => quest.completed);
+  const unlockedAchievements = achievements.filter((achievement) => achievement.unlocked);
+  const initials = (profile?.name ?? 'Q')
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
   const hasProfileChanges = useMemo(() => {
     if (!profile) return false;
     return name.trim() !== profile.name || normalizeEmail(email) !== profile.email;
@@ -160,17 +173,81 @@ export default function ProfileScreen() {
   return (
     <Screen contentStyle={styles.content}>
       <PageHeader
-        action={<Button fullWidth={false} icon="shield" onPress={() => router.push('/security')} size="sm" title="Безпека" variant="ghost" />}
+        action={
+          <View style={styles.headerActions}>
+            <Button fullWidth={false} icon="award" onPress={() => router.push('/achievements' as never)} size="sm" title="Бейджі" variant="secondary" />
+            <Button fullWidth={false} icon="shield" onPress={() => router.push('/security')} size="sm" title="Безпека" variant="ghost" />
+          </View>
+        }
         eyebrow="Профіль"
         subtitle={profile ? `Створено ${formatDate(profile.createdAt)}` : 'Ваш локальний профіль QuestMe.'}
         title={profile?.name ?? 'QuestMe'}
       />
+
+      <Card style={styles.profileHero}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{initials}</Text>
+        </View>
+        <View style={styles.profileHeroCopy}>
+          <Text style={styles.profileName}>{profile?.name ?? 'QuestMe'}</Text>
+          <Text style={styles.profileMeta}>Level {progress.level} · {progress.totalPoints} XP</Text>
+          <View style={styles.levelTrack}>
+            <View style={[styles.levelFill, { width: `${progress.levelProgressPercent}%` }]} />
+          </View>
+        </View>
+        <ProgressRing label="рівень" percent={progress.levelProgressPercent} size={92} value={`${progress.level}`} />
+      </Card>
 
       <View style={styles.metrics}>
         <Metric label="Виконано" value={`${progress.completedCount}/${progress.totalCount}`} />
         <Metric label="Балів" value={progress.totalPoints} />
         <Metric label="Прогрес" value={`${progress.completionPercent}%`} />
       </View>
+
+      <Card style={styles.card}>
+        <SectionHeader
+          action={<Button fullWidth={false} icon="arrow-right" onPress={() => router.push('/achievements' as never)} size="sm" title="Усі" variant="ghost" />}
+          subtitle={`${unlockedAchievements.length}/${achievements.length} відкрито`}
+          title="Досягнення"
+        />
+        <View style={styles.badgeGrid}>
+          {achievements.slice(0, 4).map((achievement) => (
+            <View key={achievement.id} style={[styles.badgeCard, !achievement.unlocked && styles.badgeCardLocked]}>
+              <View style={[styles.badgeIcon, achievement.unlocked && styles.badgeIconUnlocked]}>
+                <Feather color={achievement.unlocked ? '#FFFFFF' : '#7A7A7A'} name={achievement.icon} size={18} />
+              </View>
+              <Text numberOfLines={1} style={styles.badgeTitle}>{achievement.title}</Text>
+              <Text numberOfLines={2} style={styles.badgeText}>
+                {achievement.unlocked ? 'Відкрито' : 'Закрито'}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </Card>
+
+      <Card style={styles.card}>
+        <SectionHeader
+          subtitle="Останні персональні місії, які ви завершили"
+          title="Історія квестів"
+        />
+        {completedQuests.length ? (
+          <View style={styles.historyList}>
+            {completedQuests.slice(0, 4).map((quest) => (
+              <View key={quest.id} style={styles.historyRow}>
+                <View style={styles.historyIcon}>
+                  <Feather color={colors.success} name="check" size={16} />
+                </View>
+                <View style={styles.historyCopy}>
+                  <Text style={styles.historyTitle}>{quest.title}</Text>
+                  <Text style={styles.historyText}>+{quest.points} XP · {quest.completedAt ? formatDate(quest.completedAt) : 'сьогодні'}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <Notice tone="neutral">Завершіть перший квест, і тут зʼявиться історія активності.</Notice>
+        )}
+      </Card>
 
       <Card style={styles.card}>
         <SectionHeader

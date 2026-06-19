@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { MOCK_QUESTS } from '@/components/home/quest.types';
 import { Card } from '@/components/ui/card';
-import { PageHeader } from '@/components/ui/layout';
+import { PageHeader, ProgressBar } from '@/components/ui/layout';
 import { Screen } from '@/components/ui/screen';
 import { EmptyState, Notice } from '@/components/ui/status';
 import { colors, radii, spacing, typography } from '@/theme';
@@ -33,6 +33,19 @@ export function ExploreMap() {
           </View>
         ))}
       </View>
+
+      <Card style={styles.mapSheet}>
+        <View style={styles.sheetHeader}>
+          <View style={styles.pointIcon}>
+            <Feather color={colors.primary} name="map-pin" size={18} />
+          </View>
+          <View style={styles.pointCopy}>
+            <Text style={styles.pointTitle}>{MOCK_QUESTS[0]?.title ?? 'Квест поруч'}</Text>
+            <Text style={styles.pointMeta}>Bottom sheet preview · swipe на native · geofence ready</Text>
+          </View>
+        </View>
+        <ProgressBar percent={33} />
+      </Card>
 
       <Notice tone="info">
         На web показано preview. На iOS/Android карта бере реальну геолокацію, будує маршрут, перевіряє geofence і кешує найближчі квести.
@@ -110,6 +123,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 36,
   },
+  mapSheet: {
+    gap: spacing.md,
+    marginTop: -spacing.lg,
+  },
   routePreview: {
     backgroundColor: colors.primary,
     borderRadius: radii.pill,
@@ -153,5 +170,10 @@ const styles = StyleSheet.create({
   pointDuration: {
     ...typography.captionStrong,
     color: colors.primary,
+  },
+  sheetHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
   },
 });

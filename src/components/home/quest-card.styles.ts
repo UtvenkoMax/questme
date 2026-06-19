@@ -13,7 +13,6 @@ export const cardStyles = StyleSheet.create({
   },
   cardPressed: {
     opacity: 0.9,
-    transform: [{ scale: 0.99 }],
   },
   imageContainer: {
     height: 176,
@@ -39,10 +38,14 @@ export const cardStyles = StyleSheet.create({
     right: spacing.md,
     top: spacing.md,
   },
+  badgeStack: {
+    gap: spacing.xs,
+    maxWidth: '62%',
+  },
   categoryBadge: {
     backgroundColor: colors.primary,
     borderRadius: radii.pill,
-    maxWidth: '58%',
+    alignSelf: 'flex-start',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },
@@ -55,6 +58,20 @@ export const cardStyles = StyleSheet.create({
     borderRadius: radii.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
+  },
+  smallBadge: {
+    ...typography.captionStrong,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderRadius: radii.pill,
+    color: colors.ink,
+    overflow: 'hidden',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+  },
+  smallBadgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
   },
   starRow: {
     alignItems: 'center',
