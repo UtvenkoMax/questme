@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
-import { colors } from '@/theme';
+import { useAppTheme } from '@/components/providers/app-preferences';
 import { getResponsiveMetrics } from '@/utils/responsive';
 
 type ScreenProps = {
@@ -33,6 +33,7 @@ export function Screen({
   style,
   wide = false,
 }: ScreenProps) {
+  const theme = useAppTheme();
   const { height, width } = useWindowDimensions();
   const layout = getResponsiveMetrics(width, height);
   const maxWidth = wide ? layout.listMaxWidth : layout.contentMaxWidth;
@@ -59,7 +60,7 @@ export function Screen({
   );
 
   return (
-    <SafeAreaView edges={edges} style={[styles.screen, style]}>
+    <SafeAreaView edges={edges} style={[styles.screen, { backgroundColor: theme.colors.background }, style]}>
       {keyboard ? (
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
           {body}
@@ -73,7 +74,6 @@ export function Screen({
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: colors.background,
     flex: 1,
   },
   flex: {

@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-na
 import { Card } from '@/components/ui/card';
 import { PageHeader, Pill, SectionHeader } from '@/components/ui/layout';
 import { Screen } from '@/components/ui/screen';
+import { EmptyState } from '@/components/ui/status';
 import { colors, radii, shadows, spacing, typography } from '@/theme';
 import { getResponsiveMetrics } from '@/utils/responsive';
 
@@ -70,17 +71,33 @@ export default function VideosScreen() {
         title="Виконані завдання у відео"
       />
 
-      <FeaturedVideo video={featured} />
+      {featured ? (
+        <FeaturedVideo video={featured} />
+      ) : (
+        <EmptyState
+          icon="video"
+          text="Коли користувачі завершать квести з відео-підтвердженням, кліпи зʼявляться тут."
+          title="Відео ще немає"
+        />
+      )}
 
       <View style={styles.feed}>
         <SectionHeader subtitle="Нові завершення від спільноти" title="Стрічка коротких відео" />
-        <View style={[styles.grid, layout.listColumns > 1 && styles.gridWide]}>
-          {COMPLETED_VIDEOS.map((video) => (
-            <View key={video.id} style={[styles.gridItem, layout.listColumns > 1 && styles.gridItemWide]}>
-              <VideoCard video={video} />
-            </View>
-          ))}
-        </View>
+        {COMPLETED_VIDEOS.length ? (
+          <View style={[styles.grid, layout.listColumns > 1 && styles.gridWide]}>
+            {COMPLETED_VIDEOS.map((video) => (
+              <View key={video.id} style={[styles.gridItem, layout.listColumns > 1 && styles.gridItemWide]}>
+                <VideoCard video={video} />
+              </View>
+            ))}
+          </View>
+        ) : (
+          <EmptyState
+            icon="play-circle"
+            text="Стрічка заповниться після перших завершених квестів."
+            title="Немає коротких відео"
+          />
+        )}
       </View>
     </Screen>
   );

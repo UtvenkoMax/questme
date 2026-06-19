@@ -31,4 +31,16 @@ export const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'right',
   },
+  reauthBox: {
+    backgroundColor: colors.surfacePearl,
+    borderColor: colors.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
+  reauthText: {
+    ...typography.body,
+    color: colors.inkMuted,
+  },
 });

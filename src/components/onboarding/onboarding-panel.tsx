@@ -6,6 +6,7 @@ import { type Slide } from './slides-data';
 import { SlideDots } from './slide-dots';
 import { SlideToRegister } from './slide-to-register';
 import { onboardingStyles as s } from './onboarding.styles';
+import { INTEREST_OPTIONS, type InterestId } from '@/services/preferences-service';
 import type { ResponsiveMetrics } from '@/utils/responsive';
 
 type OnboardingPanelProps = {
@@ -16,7 +17,9 @@ type OnboardingPanelProps = {
   onNext: () => void;
   onComplete: () => void;
   onFallback: () => void;
+  onToggleInterest: (interestId: InterestId) => void;
   screenWidth: number;
+  selectedInterestIds: InterestId[];
 };
 
 export function OnboardingPanel({
@@ -27,7 +30,9 @@ export function OnboardingPanel({
   onNext,
   onComplete,
   onFallback,
+  onToggleInterest,
   screenWidth,
+  selectedInterestIds,
 }: OnboardingPanelProps) {
   const sideInset = layout.isWide ? Math.max((screenWidth - layout.contentMaxWidth) / 2, layout.gutter) : 0;
   const compact = layout.isCompactHeight || layout.isCompactWidth;
@@ -53,6 +58,29 @@ export function OnboardingPanel({
         <Text style={[s.subtitle, compact && s.subtitleCompact]}>{slide.subtitle}</Text>
 
         <SlideDots currentIndex={currentIndex} accent={slide.accent} />
+
+        {isLastSlide ? (
+          <View style={s.interestGrid}>
+            {INTEREST_OPTIONS.map((interest) => {
+              const selected = selectedInterestIds.includes(interest.id);
+              return (
+                <Pressable
+                  accessibilityRole="button"
+                  key={interest.id}
+                  onPress={() => onToggleInterest(interest.id)}
+                  style={[
+                    s.interestChip,
+                    { borderColor: selected ? slide.accent : undefined },
+                    selected && { backgroundColor: slide.accent },
+                  ]}>
+                  <Text style={[s.interestChipText, selected && s.interestChipTextActive]}>
+                    {interest.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
       </View>
 
       {isLastSlide ? (

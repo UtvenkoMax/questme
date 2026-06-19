@@ -170,4 +170,24 @@ export const onboardingStyles = StyleSheet.create({
   fallbackButtonText: {
     ...typography.captionStrong,
   },
+  interestChip: {
+    borderColor: colors.border,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  interestChipText: {
+    ...typography.captionStrong,
+    color: colors.inkMuted,
+  },
+  interestChipTextActive: {
+    color: colors.white,
+  },
+  interestGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+  },
 });

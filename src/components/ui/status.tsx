@@ -53,11 +53,20 @@ export function EmptyState({ action, icon = 'inbox', text, title }: EmptyStatePr
 
 export function LoadingState({ text = 'Завантажуємо...' }: { text?: string }) {
   return (
-    <View style={styles.empty}>
-      <View style={styles.emptyIcon}>
-        <Feather color={colors.primary} name="loader" size={24} />
+    <View accessibilityLiveRegion="polite" style={styles.skeletonCard}>
+      <View style={styles.skeletonHeader}>
+        <View style={styles.skeletonIcon} />
+        <View style={styles.skeletonCopy}>
+          <View style={styles.skeletonLineWide} />
+          <View style={styles.skeletonLine} />
+        </View>
       </View>
-      <Text style={styles.emptyTitle}>{text}</Text>
+      <View style={styles.skeletonBody}>
+        <View style={styles.skeletonBlock} />
+        <View style={styles.skeletonLineWide} />
+        <View style={styles.skeletonLineShort} />
+      </View>
+      <Text style={styles.loadingText}>{text}</Text>
     </View>
   );
 }
@@ -103,5 +112,59 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.inkMuted,
     textAlign: 'center',
+  },
+  loadingText: {
+    ...typography.captionStrong,
+    color: colors.inkMuted,
+    textAlign: 'center',
+  },
+  skeletonBody: {
+    gap: spacing.sm,
+  },
+  skeletonBlock: {
+    backgroundColor: colors.surfacePearl,
+    borderRadius: radii.md,
+    height: 72,
+  },
+  skeletonCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    gap: spacing.lg,
+    padding: spacing.xl,
+  },
+  skeletonCopy: {
+    flex: 1,
+    gap: spacing.sm,
+  },
+  skeletonHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  skeletonIcon: {
+    backgroundColor: colors.primarySoft,
+    borderRadius: radii.pill,
+    height: 52,
+    width: 52,
+  },
+  skeletonLine: {
+    backgroundColor: colors.borderSoft,
+    borderRadius: radii.pill,
+    height: 14,
+    width: '62%',
+  },
+  skeletonLineShort: {
+    backgroundColor: colors.borderSoft,
+    borderRadius: radii.pill,
+    height: 14,
+    width: '42%',
+  },
+  skeletonLineWide: {
+    backgroundColor: colors.borderSoft,
+    borderRadius: radii.pill,
+    height: 16,
+    width: '82%',
   },
 });

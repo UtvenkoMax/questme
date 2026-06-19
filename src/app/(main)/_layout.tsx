@@ -1,12 +1,13 @@
 import { Feather } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LoadingState } from '@/components/ui/status';
 import { Screen } from '@/components/ui/screen';
+import { useAppTheme } from '@/components/providers/app-preferences';
 import { getAuthSession, getUserProfile, hasPin } from '@/services/auth-service';
-import { colors } from '@/theme';
 
 type TabIconName = React.ComponentProps<typeof Feather>['name'];
 
@@ -19,7 +20,9 @@ const TAB_ICONS: Record<string, TabIconName> = {
 };
 
 export default function MainTabsLayout() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
   const [redirectTo, setRedirectTo] = useState<'/' | '/login' | '/pin-code' | null>(null);
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
 
@@ -70,8 +73,8 @@ export default function MainTabsLayout() {
     <Tabs
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.inkSubtle,
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.inkSubtle,
         tabBarIcon: ({ color, focused }) => (
           <Feather color={color} name={TAB_ICONS[route.name] ?? 'circle'} size={focused ? 21 : 19} />
         ),
@@ -81,8 +84,8 @@ export default function MainTabsLayout() {
           letterSpacing: 0,
         },
         tabBarStyle: {
-          backgroundColor: colors.surfacePearl,
-          borderTopColor: colors.border,
+          backgroundColor: theme.colors.surfacePearl,
+          borderTopColor: theme.colors.border,
           borderTopWidth: 1,
           height: 58 + Math.max(insets.bottom, 8),
           paddingBottom: Math.max(insets.bottom, 8),
@@ -92,36 +95,36 @@ export default function MainTabsLayout() {
       <Tabs.Screen
         name="quests"
         options={{
-          tabBarLabel: 'Квести',
-          title: 'Квести',
+          tabBarLabel: t('tabs.quests'),
+          title: t('tabs.quests'),
         }}
       />
       <Tabs.Screen
         name="videos"
         options={{
-          tabBarLabel: 'Відео',
-          title: 'Відео',
+          tabBarLabel: t('tabs.videos'),
+          title: t('tabs.videos'),
         }}
       />
       <Tabs.Screen
         name="publish"
         options={{
-          tabBarLabel: 'Публікації',
-          title: 'Публікації',
+          tabBarLabel: t('tabs.publish'),
+          title: t('tabs.publish'),
         }}
       />
       <Tabs.Screen
         name="map"
         options={{
-          tabBarLabel: 'Карта',
-          title: 'Карта',
+          tabBarLabel: t('tabs.map'),
+          title: t('tabs.map'),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          tabBarLabel: 'Профіль',
-          title: 'Профіль',
+          tabBarLabel: t('tabs.profile'),
+          title: t('tabs.profile'),
         }}
       />
     </Tabs>

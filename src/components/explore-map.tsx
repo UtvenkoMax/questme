@@ -5,6 +5,7 @@ import { MOCK_QUESTS } from '@/components/home/quest.types';
 import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/layout';
 import { Screen } from '@/components/ui/screen';
+import { EmptyState, Notice } from '@/components/ui/status';
 import { colors, radii, spacing, typography } from '@/theme';
 
 const MARKERS = [
@@ -25,6 +26,7 @@ export function ExploreMap() {
       <View style={styles.mapPreview}>
         <View style={styles.gridLineOne} />
         <View style={styles.gridLineTwo} />
+        <View style={styles.routePreview} />
         {MARKERS.map((marker) => (
           <View key={`${marker.left}-${marker.top}`} style={[styles.marker, marker]}>
             <Feather color={colors.white} name="map-pin" size={15} />
@@ -32,23 +34,35 @@ export function ExploreMap() {
         ))}
       </View>
 
+      <Notice tone="info">
+        На web показано preview. На iOS/Android карта бере реальну геолокацію, будує маршрут, перевіряє geofence і кешує найближчі квести.
+      </Notice>
+
       <View style={styles.pointList}>
-        {MOCK_QUESTS.map((quest) => (
-          <Card key={quest.id} style={styles.pointRow}>
-            <View style={styles.pointIcon}>
-              <Feather color={colors.primary} name="compass" size={18} />
-            </View>
-            <View style={styles.pointCopy}>
-              <Text numberOfLines={1} style={styles.pointTitle}>
-                {quest.title}
-              </Text>
-              <Text numberOfLines={1} style={styles.pointMeta}>
-                {quest.location} · {quest.distance}
-              </Text>
-            </View>
-            <Text style={styles.pointDuration}>{quest.duration}</Text>
-          </Card>
-        ))}
+        {MOCK_QUESTS.length ? (
+          MOCK_QUESTS.map((quest) => (
+            <Card key={quest.id} style={styles.pointRow}>
+              <View style={styles.pointIcon}>
+                <Feather color={colors.primary} name="compass" size={18} />
+              </View>
+              <View style={styles.pointCopy}>
+                <Text numberOfLines={1} style={styles.pointTitle}>
+                  {quest.title}
+                </Text>
+                <Text numberOfLines={1} style={styles.pointMeta}>
+                  {quest.location} · {quest.distance} · {quest.route.length} точки
+                </Text>
+              </View>
+              <Text style={styles.pointDuration}>{quest.duration}</Text>
+            </Card>
+          ))
+        ) : (
+          <EmptyState
+            icon="map-pin"
+            text="Коли зʼявляться маршрути поблизу, вони будуть доступні на карті та в offline-кеші."
+            title="Квестів на карті поки немає"
+          />
+        )}
       </View>
     </Screen>
   );
@@ -95,6 +109,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'absolute',
     width: 36,
+  },
+  routePreview: {
+    backgroundColor: colors.primary,
+    borderRadius: radii.pill,
+    height: 5,
+    left: '33%',
+    opacity: 0.7,
+    position: 'absolute',
+    top: '48%',
+    transform: [{ rotate: '28deg' }],
+    width: '44%',
   },
   pointList: {
     gap: spacing.md,

@@ -1,8 +1,10 @@
 {
   "tabs": {
-    "quests": "Quests",
     "map": "Map",
-    "profile": "Profile"
+    "profile": "Profile",
+    "publish": "Publish",
+    "quests": "Quests",
+    "videos": "Videos"
   },
   "home": {
     "title": "Available Quests",

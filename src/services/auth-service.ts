@@ -21,6 +21,7 @@ export const STORAGE_KEYS = {
   pinLockedUntil: 'questme.pin.lockedUntil',
   profile: 'questme.profile',
   quests: 'questme.quests',
+  recoveryCode: 'questme.recovery.code',
 } as const;
 
 export type AuthProvider = 'backend' | 'local';
@@ -69,6 +70,13 @@ type BackendResponseBody = BackendRegisterResponse & {
   message?: unknown;
 };
 
+type RecoveryCodeRecord = {
+  code: string;
+  createdAt: string;
+  email: string;
+  expiresAt: string;
+};
+
 type WebCryptoLike = {
   getRandomValues?: (array: Uint8Array) => Uint8Array;
   subtle?: {
@@ -83,6 +91,10 @@ function getAuthApiUrl() {
 
 function createLocalId() {
   return `local-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function createSixDigitCode() {
+  return String(Math.floor(100000 + Math.random() * 900000));
 }
 
 function getWebCrypto() {
@@ -319,6 +331,42 @@ export async function startAuthSession(token?: string) {
     signedInAt: new Date().toISOString(),
     token: token ?? currentSession?.token,
   } satisfies AuthSession);
+}
+
+export async function createRecoveryCode(email: string) {
+  const profile = await getUserProfile();
+  const normalizedEmail = normalizeEmail(email);
+
+  if (!profile || normalizeEmail(profile.email) !== normalizedEmail) {
+    return null;
+  }
+
+  const code = createSixDigitCode();
+  const now = Date.now();
+  await setJsonItem(STORAGE_KEYS.recoveryCode, {
+    code,
+    createdAt: new Date(now).toISOString(),
+    email: normalizedEmail,
+    expiresAt: new Date(now + 10 * 60 * 1000).toISOString(),
+  } satisfies RecoveryCodeRecord);
+
+  return code;
+}
+
+export async function verifyRecoveryCode(email: string, code: string) {
+  const record = await getJsonItem<RecoveryCodeRecord>(STORAGE_KEYS.recoveryCode);
+  if (!record) return false;
+
+  if (Date.parse(record.expiresAt) <= Date.now()) {
+    await deleteStorageItem(STORAGE_KEYS.recoveryCode);
+    return false;
+  }
+
+  const isValid = record.email === normalizeEmail(email) && record.code === code.trim();
+  if (!isValid) return false;
+
+  await Promise.all([deleteStorageItem(STORAGE_KEYS.recoveryCode), startAuthSession()]);
+  return true;
 }
 
 export async function getUserProfile() {

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { PageHeader, Pill, SectionHeader } from '@/components/ui/layout';
 import { Screen } from '@/components/ui/screen';
-import { Notice } from '@/components/ui/status';
+import { EmptyState, Notice } from '@/components/ui/status';
 import { TextField } from '@/components/ui/text-field';
 import { colors, radii, spacing, typography } from '@/theme';
 import { getResponsiveMetrics } from '@/utils/responsive';
@@ -121,9 +121,15 @@ export default function PublishScreen() {
 
         <View style={styles.feed}>
           <SectionHeader subtitle="Завдання, які вже додали учасники" title="Стрічка спільноти" />
-          {tasks.map((task) => (
-            <CommunityTaskCard key={task.id} task={task} />
-          ))}
+          {tasks.length ? (
+            tasks.map((task) => <CommunityTaskCard key={task.id} task={task} />)
+          ) : (
+            <EmptyState
+              icon="send"
+              text="Опублікуйте перше завдання, і воно зʼявиться у стрічці спільноти."
+              title="У стрічці поки немає завдань"
+            />
+          )}
         </View>
       </View>
     </Screen>

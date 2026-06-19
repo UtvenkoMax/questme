@@ -164,6 +164,10 @@ export default function LoginScreen() {
       [
         { style: 'cancel', text: 'Скасувати' },
         {
+          onPress: () => router.push('/recover' as never),
+          text: 'Відновити через email',
+        },
+        {
           onPress: async () => {
             await deleteLocalAccountData();
             router.replace('/onboarding');

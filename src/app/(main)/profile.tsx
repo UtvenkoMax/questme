@@ -2,6 +2,8 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 
+import { authenticateWithBiometrics } from '@/components/auth/biometric-auth';
+import { PIN_LENGTH } from '@/components/auth/pin-code.types';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Metric, PageHeader, SectionHeader } from '@/components/ui/layout';
@@ -9,10 +11,14 @@ import { Screen } from '@/components/ui/screen';
 import { LoadingState, Notice } from '@/components/ui/status';
 import { TextField } from '@/components/ui/text-field';
 import {
+  getPinLockedUntil,
   getUserProfile,
   hasProfileErrors,
+  isBiometricEnabled,
+  normalizeEmail,
   updateUserProfile,
   validateProfile,
+  verifyPin,
   type UserProfile,
 } from '@/services/auth-service';
 import { getQuestProgress, getQuests, type Quest } from '@/services/quest-service';
@@ -32,6 +38,9 @@ export default function ProfileScreen() {
   const [quests, setQuests] = useState<Quest[]>([]);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [confirmationPin, setConfirmationPin] = useState('');
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [isProfileChangeVerified, setIsProfileChangeVerified] = useState(false);
   const [message, setMessage] = useState<{ text: string; tone: 'success' | 'danger' | 'neutral' } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -42,7 +51,11 @@ export default function ProfileScreen() {
 
       async function loadProfile() {
         setIsLoading(true);
-        const [storedProfile, storedQuests] = await Promise.all([getUserProfile(), getQuests()]);
+        const [storedProfile, storedQuests, storedBiometricEnabled] = await Promise.all([
+          getUserProfile(),
+          getQuests(),
+          isBiometricEnabled(),
+        ]);
         if (!isMounted) return;
 
         if (!storedProfile) {
@@ -53,6 +66,9 @@ export default function ProfileScreen() {
         setProfile(storedProfile);
         setName(storedProfile.name);
         setEmail(storedProfile.email);
+        setBiometricEnabled(storedBiometricEnabled);
+        setConfirmationPin('');
+        setIsProfileChangeVerified(false);
         setQuests(storedQuests);
         setIsLoading(false);
       }
@@ -66,7 +82,30 @@ export default function ProfileScreen() {
 
   const errors = useMemo(() => validateProfile({ email, name }), [email, name]);
   const progress = useMemo(() => getQuestProgress(quests), [quests]);
-  const canSave = !hasProfileErrors(errors) && !isSaving;
+  const hasProfileChanges = useMemo(() => {
+    if (!profile) return false;
+    return name.trim() !== profile.name || normalizeEmail(email) !== profile.email;
+  }, [email, name, profile]);
+  const canSave =
+    !hasProfileErrors(errors) &&
+    !isSaving &&
+    (!hasProfileChanges || isProfileChangeVerified || confirmationPin.length === PIN_LENGTH);
+
+  const verifyProfileChangeWithBiometrics = async () => {
+    setIsSaving(true);
+    setMessage(null);
+
+    try {
+      const result = await authenticateWithBiometrics({
+        promptMessage: 'Підтвердьте зміну профілю',
+      });
+
+      setIsProfileChangeVerified(result.success);
+      setMessage({ text: result.message, tone: result.success ? 'success' : 'danger' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const saveProfile = async () => {
     if (!canSave) return;
@@ -75,8 +114,30 @@ export default function ProfileScreen() {
     setMessage(null);
 
     try {
+      if (hasProfileChanges && !isProfileChangeVerified) {
+        const isPinValid = await verifyPin(confirmationPin);
+        if (!isPinValid) {
+          const lockedUntil = await getPinLockedUntil();
+          setMessage({
+            text: lockedUntil
+              ? `Забагато невдалих спроб. Повторіть після ${lockedUntil.toLocaleTimeString('uk-UA', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}.`
+              : 'PIN не підтверджено. Перевірте код і спробуйте ще раз.',
+            tone: 'danger',
+          });
+          setConfirmationPin('');
+          return;
+        }
+
+        setIsProfileChangeVerified(true);
+      }
+
       const nextProfile = await updateUserProfile({ email, name });
       setProfile(nextProfile);
+      setConfirmationPin('');
+      setIsProfileChangeVerified(false);
       setMessage({ text: 'Профіль оновлено.', tone: 'success' });
     } catch (error) {
       setMessage({
@@ -138,6 +199,32 @@ export default function ProfileScreen() {
           textContentType="emailAddress"
           value={email}
         />
+        {hasProfileChanges && !isProfileChangeVerified ? (
+          <View style={styles.reauthBox}>
+            <Text style={styles.reauthText}>
+              Щоб змінити email або імʼя профілю, підтвердьте дію PIN-кодом або біометрією.
+            </Text>
+            <TextField
+              inputMode="numeric"
+              keyboardType="number-pad"
+              label="PIN для підтвердження"
+              maxLength={PIN_LENGTH}
+              onChangeText={setConfirmationPin}
+              placeholder="••••"
+              secureTextEntry
+              value={confirmationPin}
+            />
+            {biometricEnabled ? (
+              <Button
+                disabled={isSaving}
+                icon="shield"
+                onPress={verifyProfileChangeWithBiometrics}
+                title="Підтвердити біометрією"
+                variant="secondary"
+              />
+            ) : null}
+          </View>
+        ) : null}
         {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
         <Button disabled={!canSave} icon="save" loading={isSaving} onPress={saveProfile} title="Зберегти зміни" />
       </Card>

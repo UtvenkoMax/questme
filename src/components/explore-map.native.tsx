@@ -1,12 +1,16 @@
 import { Feather } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
-import MapView, { Marker, PROVIDER_DEFAULT, type Region } from 'react-native-maps';
+import MapView, { Circle, Marker, Polyline, PROVIDER_DEFAULT, type Region } from 'react-native-maps';
 
-import { MOCK_QUESTS } from '@/components/home/quest.types';
+import { MOCK_QUESTS, type Quest, type QuestCoordinate } from '@/components/home/quest.types';
+import { getJsonItem, setJsonItem } from '@/services/app-storage';
 import { colors } from '@/theme';
 import { styles } from './explore-map.native.styles';
+
+const MAP_CACHE_KEY = 'questme.map.nearbyCache';
+const NEARBY_RADIUS_METERS = 5000;
 
 const KYIV_REGION: Region = {
   latitude: 50.4501,
@@ -15,31 +19,90 @@ const KYIV_REGION: Region = {
   longitudeDelta: 0.0421,
 };
 
-const QUEST_MARKERS = [
-  {
-    coordinate: { latitude: 50.4531, longitude: 30.5294 },
-    quest: MOCK_QUESTS[0],
-  },
-  {
-    coordinate: { latitude: 50.4442, longitude: 30.5211 },
-    quest: MOCK_QUESTS[1],
-  },
-  {
-    coordinate: { latitude: 50.4501, longitude: 30.5234 },
-    quest: MOCK_QUESTS[2],
-  },
-];
+type QuestMarker = {
+  distanceMeters: number | null;
+  quest: Quest;
+};
+
+type CachedMapState = {
+  questIds: { distanceMeters: number; id: string }[];
+  savedAt: string;
+  userCoordinate: QuestCoordinate;
+};
+
+function getDistanceMeters(from: QuestCoordinate, to: QuestCoordinate) {
+  const earthRadiusMeters = 6371000;
+  const toRadians = (value: number) => (value * Math.PI) / 180;
+  const latitudeDelta = toRadians(to.latitude - from.latitude);
+  const longitudeDelta = toRadians(to.longitude - from.longitude);
+  const fromLatitude = toRadians(from.latitude);
+  const toLatitude = toRadians(to.latitude);
+
+  const haversine =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(fromLatitude) * Math.cos(toLatitude) * Math.sin(longitudeDelta / 2) ** 2;
+
+  return earthRadiusMeters * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+}
+
+function formatDistance(distanceMeters: number | null) {
+  if (distanceMeters == null) return 'відстань невідома';
+  if (distanceMeters < 1000) return `${Math.round(distanceMeters)} м`;
+  return `${(distanceMeters / 1000).toFixed(1)} км`;
+}
+
+function createQuestMarkers(userCoordinate: QuestCoordinate) {
+  return [...MOCK_QUESTS]
+    .map((quest) => ({
+      distanceMeters: getDistanceMeters(userCoordinate, quest.coordinate),
+      quest,
+    }))
+    .sort((left, right) => left.distanceMeters - right.distanceMeters);
+}
+
+function createMarkersFromCache(cache: CachedMapState): QuestMarker[] {
+  const markers: QuestMarker[] = [];
+
+  cache.questIds.forEach(({ distanceMeters, id }) => {
+    const quest = MOCK_QUESTS.find((item) => item.id === id);
+    if (quest) markers.push({ distanceMeters, quest });
+  });
+
+  return markers;
+}
 
 export function ExploreMap() {
   const [region, setRegion] = useState<Region>(KYIV_REGION);
   const [hasUserLocation, setHasUserLocation] = useState(false);
+  const [userCoordinate, setUserCoordinate] = useState<QuestCoordinate | null>(null);
+  const [questMarkers, setQuestMarkers] = useState<QuestMarker[]>(
+    MOCK_QUESTS.map((quest) => ({ distanceMeters: null, quest }))
+  );
+  const [selectedQuestId, setSelectedQuestId] = useState(MOCK_QUESTS[0]?.id ?? '');
   const [statusMessage, setStatusMessage] = useState('Шукаємо вашу локацію...');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const selectedMarker = useMemo(
+    () => questMarkers.find((marker) => marker.quest.id === selectedQuestId) ?? questMarkers[0],
+    [questMarkers, selectedQuestId]
+  );
+  const geofenceDistance = userCoordinate && selectedMarker ? getDistanceMeters(userCoordinate, selectedMarker.quest.coordinate) : null;
+  const isInsideGeofence =
+    selectedMarker && geofenceDistance != null && geofenceDistance <= selectedMarker.quest.geofenceRadiusMeters;
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadLocation() {
+      const cachedState = await getJsonItem<CachedMapState>(MAP_CACHE_KEY);
+      if (isMounted && cachedState) {
+        const cachedMarkers = createMarkersFromCache(cachedState);
+        if (cachedMarkers.length) {
+          setQuestMarkers(cachedMarkers);
+          setSelectedQuestId(cachedMarkers[0].quest.id);
+          setStatusMessage('Показуємо кешовані квести поруч');
+        }
+      }
+
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (!isMounted) return;
@@ -52,15 +115,42 @@ export function ExploreMap() {
 
         const currentLocation = await Location.getCurrentPositionAsync({});
         if (!isMounted) return;
+        const currentCoordinate = {
+          latitude: currentLocation.coords.latitude,
+          longitude: currentLocation.coords.longitude,
+        };
+        const sortedMarkers = createQuestMarkers(currentCoordinate);
+        const nearbyMarkers = sortedMarkers.filter((marker) => marker.distanceMeters <= NEARBY_RADIUS_METERS);
+        const markersToShow = nearbyMarkers.length ? nearbyMarkers : sortedMarkers;
 
         setHasUserLocation(true);
+        setUserCoordinate(currentCoordinate);
+        setQuestMarkers(markersToShow);
+        setSelectedQuestId(markersToShow[0]?.quest.id ?? MOCK_QUESTS[0]?.id ?? '');
         setRegion({
-          latitude: currentLocation.coords.latitude,
-          latitudeDelta: 0.06,
-          longitude: currentLocation.coords.longitude,
+          latitude: nearbyMarkers.length ? currentCoordinate.latitude : markersToShow[0]?.quest.coordinate.latitude ?? KYIV_REGION.latitude,
+          latitudeDelta: nearbyMarkers.length ? 0.06 : 0.0922,
+          longitude: nearbyMarkers.length ? currentCoordinate.longitude : markersToShow[0]?.quest.coordinate.longitude ?? KYIV_REGION.longitude,
           longitudeDelta: 0.035,
         });
-        setStatusMessage('Квести поруч із вами');
+        setStatusMessage(
+          nearbyMarkers.length
+            ? 'Квести поруч із вами'
+            : 'Поруч немає квестів у радіусі 5 км'
+        );
+        setErrorMessage(
+          nearbyMarkers.length
+            ? null
+            : 'Поруч із вашою реальною геолокацією квестів немає. Показуємо найближчі доступні маршрути та кешуємо їх для offline-перегляду.'
+        );
+        await setJsonItem(MAP_CACHE_KEY, {
+          questIds: sortedMarkers.map((marker) => ({
+            distanceMeters: marker.distanceMeters ?? 0,
+            id: marker.quest.id,
+          })),
+          savedAt: new Date().toISOString(),
+          userCoordinate: currentCoordinate,
+        } satisfies CachedMapState);
       } catch {
         if (!isMounted) return;
 
@@ -84,15 +174,32 @@ export function ExploreMap() {
         showsMyLocationButton={hasUserLocation}
         showsUserLocation={hasUserLocation}
         style={styles.map}>
-        {QUEST_MARKERS.map(({ coordinate, quest }) => (
+        {questMarkers.map(({ distanceMeters, quest }) => (
           <Marker
-            coordinate={coordinate}
-            description={quest.description}
+            coordinate={quest.coordinate}
+            description={`${quest.description} · ${formatDistance(distanceMeters)}`}
             key={quest.id}
-            pinColor={colors.primary}
+            onPress={() => setSelectedQuestId(quest.id)}
+            pinColor={quest.id === selectedQuestId ? colors.primary : colors.inkSubtle}
             title={quest.title}
           />
         ))}
+        {selectedMarker ? (
+          <>
+            <Polyline
+              coordinates={selectedMarker.quest.route}
+              strokeColor={selectedMarker.quest.accentColor}
+              strokeWidth={4}
+            />
+            <Circle
+              center={selectedMarker.quest.coordinate}
+              fillColor={`${selectedMarker.quest.accentColor}24`}
+              radius={selectedMarker.quest.geofenceRadiusMeters}
+              strokeColor={selectedMarker.quest.accentColor}
+              strokeWidth={2}
+            />
+          </>
+        ) : null}
       </MapView>
 
       <View style={styles.statusCard}>
@@ -102,7 +209,18 @@ export function ExploreMap() {
         <View style={styles.statusCopy}>
           <Text style={styles.statusEyebrow}>Карта</Text>
           <Text style={styles.statusTitle}>{statusMessage}</Text>
-          <Text style={styles.statusText}>Натисніть маркер, щоб побачити назву та підказку до маршруту.</Text>
+          <Text style={styles.statusText}>
+            {selectedMarker
+              ? `${selectedMarker.quest.title}: ${formatDistance(selectedMarker.distanceMeters)}. Маршрут має ${selectedMarker.quest.route.length} точки.`
+              : 'Квестів для показу поки немає.'}
+          </Text>
+          {selectedMarker ? (
+            <Text style={isInsideGeofence ? styles.geofenceSuccess : styles.statusText}>
+              {isInsideGeofence
+                ? 'Геофенс підтверджено: ви дійшли до точки квесту.'
+                : `Геофенс активний у радіусі ${selectedMarker.quest.geofenceRadiusMeters} м.`}
+            </Text>
+          ) : null}
         </View>
       </View>
 
