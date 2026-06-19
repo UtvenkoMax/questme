@@ -190,8 +190,8 @@ function main() {
   console.log('');
 
   // 1. Always start Expo (required)
-  console.log(`${LABELS.system} Starting Expo dev server...`);
-  spawnService('expo', 'npx', ['expo', 'start'], __dirname);
+  console.log(`${LABELS.system} Starting Expo dev server on LAN...`);
+  spawnService('expo', 'npx', ['expo', 'start', '--lan'], __dirname);
 
   // 2. Python FastAPI backend
   if (runtimes.python.available) {
