@@ -10,7 +10,9 @@ import { Screen } from '@/components/ui/screen';
 import { LoadingState, Notice } from '@/components/ui/status';
 import {
   deleteLocalAccountData,
+  getAuthSession,
   getUserProfile,
+  hasPin,
   isBiometricEnabled,
   logout,
   setBiometricEnabled as saveBiometricPreference,
@@ -28,13 +30,25 @@ export default function SecurityScreen() {
 
   const loadSecurity = useCallback(async () => {
     setIsLoading(true);
-    const [storedProfile, storedBiometricEnabled] = await Promise.all([
+    const [storedProfile, session, pinExists, storedBiometricEnabled] = await Promise.all([
       getUserProfile(),
+      getAuthSession(),
+      hasPin(),
       isBiometricEnabled(),
     ]);
 
     if (!storedProfile) {
       router.replace('/');
+      return;
+    }
+
+    if (!pinExists) {
+      router.replace('/pin-code');
+      return;
+    }
+
+    if (!session) {
+      router.replace('/login');
       return;
     }
 

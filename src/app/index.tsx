@@ -2,9 +2,9 @@ import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 
-import { getUserProfile, hasPin, isOnboardingSeen } from '@/services/auth-service';
+import { getAuthSession, getUserProfile, hasPin, isOnboardingSeen } from '@/services/auth-service';
 
-type Destination = '/onboarding' | '/register' | '/pin-code' | '/login';
+type Destination = '/onboarding' | '/register' | '/pin-code' | '/login' | '/quests';
 
 // Запобігаємо автоматичному приховуванню Splash екрану
 SplashScreen.preventAutoHideAsync();
@@ -17,10 +17,11 @@ export default function EntryScreen() {
 
     async function resolveDestination() {
       try {
-        const [onboardingSeen, profile, pinExists] = await Promise.all([
+        const [onboardingSeen, profile, pinExists, session] = await Promise.all([
           isOnboardingSeen(),
           getUserProfile(),
           hasPin(),
+          getAuthSession(),
         ]);
 
         if (!isMounted) return;
@@ -30,7 +31,7 @@ export default function EntryScreen() {
         } else if (!profile) {
           setDestination('/register');
         } else {
-          setDestination(pinExists ? '/login' : '/pin-code');
+          setDestination(pinExists ? (session ? '/quests' : '/login') : '/pin-code');
         }
       } catch {
         // У разі помилки відправляємо на онбординг як фолбек

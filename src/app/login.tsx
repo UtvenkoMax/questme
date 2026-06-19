@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Alert, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { authenticateWithBiometrics } from '@/components/auth/biometric-auth';
@@ -8,9 +8,25 @@ import { PinEntryPanel } from '@/components/auth/pin-entry-panel';
 import { PIN_LENGTH } from '@/components/auth/pin-code.types';
 import { Button } from '@/components/ui/button';
 import { Notice } from '@/components/ui/status';
-import { getUserProfile, hasPin, isBiometricEnabled, type UserProfile, verifyPin } from '@/services/auth-service';
+import {
+  deleteLocalAccountData,
+  getPinLockedUntil,
+  getUserProfile,
+  hasPin,
+  isBiometricEnabled,
+  startAuthSession,
+  type UserProfile,
+  verifyPin,
+} from '@/services/auth-service';
 import { getResponsiveMetrics } from '@/utils/responsive';
 import { styles } from './login.styles';
+
+function formatLockTime(date: Date) {
+  return new Intl.DateTimeFormat('uk-UA', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -42,6 +58,7 @@ export default function LoginScreen() {
     try {
       const result = await authenticateWithBiometrics();
       if (result.success) {
+        await startAuthSession();
         unlock();
         return;
       }
@@ -101,11 +118,17 @@ export default function LoginScreen() {
         setPin('');
 
         if (!isValid) {
+          const lockedUntil = await getPinLockedUntil();
           setMessageTone('danger');
-          setMessage('PIN-код неправильний. Спробуйте ще раз.');
+          setMessage(
+            lockedUntil
+              ? `Забагато спроб. Спробуйте після ${formatLockTime(lockedUntil)}.`
+              : 'PIN-код неправильний. Спробуйте ще раз.'
+          );
           return;
         }
 
+        await startAuthSession();
         unlock();
       } finally {
         setIsBusy(false);
@@ -133,6 +156,24 @@ export default function LoginScreen() {
     setMessageTone('neutral');
     setMessage('Введіть PIN-код.');
   }, []);
+
+  const confirmDeleteLocalData = useCallback(() => {
+    Alert.alert(
+      'Не памʼятаєте PIN?',
+      'Для безпеки PIN не можна скинути без входу. Можна видалити локальний профіль і створити його заново.',
+      [
+        { style: 'cancel', text: 'Скасувати' },
+        {
+          onPress: async () => {
+            await deleteLocalAccountData();
+            router.replace('/onboarding');
+          },
+          style: 'destructive',
+          text: 'Видалити дані',
+        },
+      ]
+    );
+  }, [router]);
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -175,7 +216,7 @@ export default function LoginScreen() {
           <Button
             disabled={isBusy}
             icon="refresh-cw"
-            onPress={() => router.push({ pathname: '/pin-code', params: { mode: 'reset' } })}
+            onPress={confirmDeleteLocalData}
             title="Забули PIN?"
             variant="ghost"
           />

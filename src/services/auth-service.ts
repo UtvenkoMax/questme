@@ -1,6 +1,14 @@
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
-import { deleteStorageItems, getJsonItem, getStorageItem, setJsonItem, setStorageItem } from './app-storage';
+import {
+  deleteStorageItem,
+  deleteStorageItems,
+  getJsonItem,
+  getStorageItem,
+  setJsonItem,
+  setStorageItem,
+} from './app-storage';
 
 export const STORAGE_KEYS = {
   authSession: 'questme.auth.session',
@@ -9,6 +17,8 @@ export const STORAGE_KEYS = {
   onboardingSeen: 'questme.onboarding.seen',
   pendingRegistration: 'questme.registration.pending',
   pin: 'questme.pin',
+  pinAttempts: 'questme.pin.attempts',
+  pinLockedUntil: 'questme.pin.lockedUntil',
   profile: 'questme.profile',
   quests: 'questme.quests',
 } as const;
@@ -50,10 +60,20 @@ type BackendRegisterResponse = {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
 const LEGACY_PROFILE_KEY = 'questme.registration';
+const WEB_PIN_HASH_PREFIX = 'web-sha256';
+const MAX_PIN_ATTEMPTS = 5;
+const PIN_LOCK_DURATION_MS = 5 * 60 * 1000;
 
 type BackendResponseBody = BackendRegisterResponse & {
   error?: unknown;
   message?: unknown;
+};
+
+type WebCryptoLike = {
+  getRandomValues?: (array: Uint8Array) => Uint8Array;
+  subtle?: {
+    digest: (algorithm: string, data: BufferSource) => Promise<ArrayBuffer>;
+  };
 };
 
 function getAuthApiUrl() {
@@ -63,6 +83,92 @@ function getAuthApiUrl() {
 
 function createLocalId() {
   return `local-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function getWebCrypto() {
+  return (globalThis as { crypto?: WebCryptoLike }).crypto;
+}
+
+function canHashPinOnWeb() {
+  const crypto = getWebCrypto();
+  return Platform.OS === 'web' && Boolean(crypto?.subtle && crypto.getRandomValues);
+}
+
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = '';
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary);
+}
+
+async function sha256Base64(value: string) {
+  const crypto = getWebCrypto();
+  if (!crypto?.subtle) throw new Error('Web Crypto API недоступний.');
+
+  const data = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return bytesToBase64(new Uint8Array(digest));
+}
+
+function createPinSalt() {
+  const crypto = getWebCrypto();
+  if (!crypto?.getRandomValues) throw new Error('Web Crypto API недоступний.');
+
+  const salt = new Uint8Array(16);
+  crypto.getRandomValues(salt);
+  return bytesToBase64(salt);
+}
+
+async function encodePinForStorage(pin: string) {
+  if (!canHashPinOnWeb()) return pin;
+
+  const salt = createPinSalt();
+  const hash = await sha256Base64(`${salt}:${pin}`);
+  return `${WEB_PIN_HASH_PREFIX}:${salt}:${hash}`;
+}
+
+async function doesPinMatch(pin: string, savedPin: string) {
+  if (!savedPin.startsWith(`${WEB_PIN_HASH_PREFIX}:`)) {
+    return savedPin === pin;
+  }
+
+  const [, salt, savedHash] = savedPin.split(':');
+  if (!salt || !savedHash) return false;
+
+  return (await sha256Base64(`${salt}:${pin}`)) === savedHash;
+}
+
+async function clearPinAttemptState() {
+  await deleteStorageItems([STORAGE_KEYS.pinAttempts, STORAGE_KEYS.pinLockedUntil]);
+}
+
+async function getActivePinLockTimestamp() {
+  const rawValue = await getStorageItem(STORAGE_KEYS.pinLockedUntil);
+  const timestamp = rawValue ? Number(rawValue) : 0;
+
+  if (!Number.isFinite(timestamp) || timestamp <= Date.now()) {
+    if (rawValue) await deleteStorageItem(STORAGE_KEYS.pinLockedUntil);
+    return 0;
+  }
+
+  return timestamp;
+}
+
+async function recordFailedPinAttempt() {
+  const rawValue = await getStorageItem(STORAGE_KEYS.pinAttempts);
+  const currentAttempts = rawValue ? Number(rawValue) : 0;
+  const nextAttempts = Number.isFinite(currentAttempts) ? currentAttempts + 1 : 1;
+
+  if (nextAttempts >= MAX_PIN_ATTEMPTS) {
+    await Promise.all([
+      setStorageItem(STORAGE_KEYS.pinLockedUntil, String(Date.now() + PIN_LOCK_DURATION_MS)),
+      setStorageItem(STORAGE_KEYS.pinAttempts, '0'),
+    ]);
+    return;
+  }
+
+  await setStorageItem(STORAGE_KEYS.pinAttempts, String(nextAttempts));
 }
 
 function parseBackendJson(text: string) {
@@ -202,6 +308,19 @@ export async function registerAccount(input: RegistrationInput) {
   return profile;
 }
 
+export async function getAuthSession() {
+  return getJsonItem<AuthSession>(STORAGE_KEYS.authSession);
+}
+
+export async function startAuthSession(token?: string) {
+  const currentSession = await getAuthSession();
+
+  await setJsonItem(STORAGE_KEYS.authSession, {
+    signedInAt: new Date().toISOString(),
+    token: token ?? currentSession?.token,
+  } satisfies AuthSession);
+}
+
 export async function getUserProfile() {
   const profile = await getJsonItem<UserProfile>(STORAGE_KEYS.profile);
   if (profile) return profile;
@@ -244,9 +363,12 @@ export async function clearPendingRegistration() {
 }
 
 export async function savePin(pin: string) {
-  await setStorageItem(STORAGE_KEYS.pin, pin, {
+  const value = await encodePinForStorage(pin);
+
+  await setStorageItem(STORAGE_KEYS.pin, value, {
     keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
   });
+  await clearPinAttemptState();
 }
 
 export async function getSavedPin() {
@@ -254,8 +376,24 @@ export async function getSavedPin() {
 }
 
 export async function verifyPin(pin: string) {
+  const lockTimestamp = await getActivePinLockTimestamp();
+  if (lockTimestamp) return false;
+
   const savedPin = await getSavedPin();
-  return Boolean(savedPin && savedPin === pin);
+  const isValid = Boolean(savedPin && (await doesPinMatch(pin, savedPin)));
+
+  if (isValid) {
+    await clearPinAttemptState();
+    return true;
+  }
+
+  await recordFailedPinAttempt();
+  return false;
+}
+
+export async function getPinLockedUntil() {
+  const lockTimestamp = await getActivePinLockTimestamp();
+  return lockTimestamp ? new Date(lockTimestamp) : null;
 }
 
 export async function hasPin() {

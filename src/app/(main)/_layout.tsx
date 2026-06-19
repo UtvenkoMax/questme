@@ -1,7 +1,11 @@
 import { Feather } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { LoadingState } from '@/components/ui/status';
+import { Screen } from '@/components/ui/screen';
+import { getAuthSession, getUserProfile, hasPin } from '@/services/auth-service';
 import { colors } from '@/theme';
 
 type TabIconName = React.ComponentProps<typeof Feather>['name'];
@@ -16,6 +20,51 @@ const TAB_ICONS: Record<string, TabIconName> = {
 
 export default function MainTabsLayout() {
   const insets = useSafeAreaInsets();
+  const [redirectTo, setRedirectTo] = useState<'/' | '/login' | '/pin-code' | null>(null);
+  const [isCheckingAccess, setIsCheckingAccess] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function checkAccess() {
+      const [profile, session, pinExists] = await Promise.all([
+        getUserProfile(),
+        getAuthSession(),
+        hasPin(),
+      ]);
+
+      if (!isMounted) return;
+
+      if (!profile) {
+        setRedirectTo('/');
+      } else if (!pinExists) {
+        setRedirectTo('/pin-code');
+      } else if (!session) {
+        setRedirectTo('/login');
+      } else {
+        setRedirectTo(null);
+      }
+
+      setIsCheckingAccess(false);
+    }
+
+    checkAccess();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  if (isCheckingAccess) {
+    return (
+      <Screen scroll={false}>
+        <LoadingState text="Перевіряємо сесію..." />
+      </Screen>
+    );
+  }
+
+  if (redirectTo) {
+    return <Redirect href={redirectTo} />;
+  }
 
   return (
     <Tabs

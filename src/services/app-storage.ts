@@ -11,21 +11,46 @@ function logJsonParseError(key: string, error: unknown) {
   }
 }
 
+function logStorageError(key: string, error: unknown) {
+  const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+
+  if (env?.NODE_ENV !== 'production') {
+    console.warn(`[QuestMe storage] Web storage is unavailable for "${key}".`, error);
+  }
+}
+
 function canUseWebStorage() {
-  return Platform.OS === 'web' && typeof window !== 'undefined' && Boolean(window.localStorage);
+  return Platform.OS === 'web' && typeof window !== 'undefined';
+}
+
+function getWebStorage(key: string) {
+  if (!canUseWebStorage()) return null;
+
+  try {
+    if (key === 'questme.auth.session' && window.sessionStorage) {
+      return window.sessionStorage;
+    }
+
+    return window.localStorage;
+  } catch (error) {
+    logStorageError(key, error);
+    return null;
+  }
 }
 
 export async function getStorageItem(key: string) {
-  if (canUseWebStorage()) {
-    return window.localStorage.getItem(key);
+  const storage = getWebStorage(key);
+  if (storage) {
+    return storage.getItem(key);
   }
 
   return SecureStore.getItemAsync(key);
 }
 
 export async function setStorageItem(key: string, value: string, options?: SecureStoreOptions) {
-  if (canUseWebStorage()) {
-    window.localStorage.setItem(key, value);
+  const storage = getWebStorage(key);
+  if (storage) {
+    storage.setItem(key, value);
     return;
   }
 
@@ -33,8 +58,9 @@ export async function setStorageItem(key: string, value: string, options?: Secur
 }
 
 export async function deleteStorageItem(key: string) {
-  if (canUseWebStorage()) {
-    window.localStorage.removeItem(key);
+  const storage = getWebStorage(key);
+  if (storage) {
+    storage.removeItem(key);
     return;
   }
 

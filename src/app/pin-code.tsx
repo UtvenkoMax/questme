@@ -1,10 +1,21 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { authenticateWithBiometrics } from '@/components/auth/biometric-auth';
 import { PinCodeScreenView } from '@/components/auth/pin-code-screen-view';
 import { PIN_LENGTH, type PinCodeStep } from '@/components/auth/pin-code.types';
-import { clearPendingRegistration, savePin, setBiometricEnabled, verifyPin } from '@/services/auth-service';
+import { LoadingState } from '@/components/ui/status';
+import { Screen } from '@/components/ui/screen';
+import {
+  clearPendingRegistration,
+  getAuthSession,
+  getPinLockedUntil,
+  getUserProfile,
+  hasPin,
+  savePin,
+  setBiometricEnabled,
+  verifyPin,
+} from '@/services/auth-service';
 
 type PinMode = 'create' | 'change' | 'reset';
 
@@ -20,6 +31,13 @@ function getInitialMessage(mode: PinMode) {
   return 'Створіть PIN-код для швидкого входу.';
 }
 
+function formatLockTime(date: Date) {
+  return new Intl.DateTimeFormat('uk-UA', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
+
 export default function PinCodeScreen() {
   const router = useRouter();
   const { mode } = useLocalSearchParams<{ mode?: string | string[] }>();
@@ -29,6 +47,50 @@ export default function PinCodeScreen() {
   const [firstPin, setFirstPin] = useState('');
   const [message, setMessage] = useState(() => getInitialMessage(pinMode));
   const [isBusy, setIsBusy] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function validatePinAccess() {
+      setIsReady(false);
+
+      const [profile, session, pinExists] = await Promise.all([
+        getUserProfile(),
+        getAuthSession(),
+        hasPin(),
+      ]);
+
+      if (!isMounted) return;
+
+      if (!profile) {
+        router.replace('/');
+        return;
+      }
+
+      if (pinMode === 'create' && pinExists) {
+        router.replace(session ? '/security' : '/login');
+        return;
+      }
+
+      if (pinMode === 'reset' && !session) {
+        router.replace('/login');
+        return;
+      }
+
+      if (pinMode === 'change' && !pinExists) {
+        router.replace('/pin-code');
+        return;
+      }
+
+      setIsReady(true);
+    }
+
+    validatePinAccess();
+    return () => {
+      isMounted = false;
+    };
+  }, [pinMode, router]);
 
   const title = useMemo(() => {
     if (step === 'biometric') return 'Безпечний вхід';
@@ -74,7 +136,12 @@ export default function PinCodeScreen() {
           setPin('');
 
           if (!isValid) {
-            setMessage('PIN-код не збігається. Спробуйте ще раз.');
+            const lockedUntil = await getPinLockedUntil();
+            setMessage(
+              lockedUntil
+                ? `Забагато спроб. Спробуйте після ${formatLockTime(lockedUntil)}.`
+                : 'PIN-код не збігається. Спробуйте ще раз.'
+            );
             return;
           }
 
@@ -159,6 +226,14 @@ export default function PinCodeScreen() {
 
     router.replace('/security');
   }, [pinMode, router]);
+
+  if (!isReady) {
+    return (
+      <Screen scroll={false}>
+        <LoadingState text="Перевіряємо доступ..." />
+      </Screen>
+    );
+  }
 
   return (
     <PinCodeScreenView
