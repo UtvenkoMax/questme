@@ -61,7 +61,7 @@ export default function ProfileScreen() {
     profile?.avatarKind === 'custom' && profile.avatarUri
       ? { uri: profile.avatarUri }
       : getAvatarPhotoSource(profile?.avatarId) ??
-        getAvatarPhotoSource(getAvatarPhotoIdForAccount(profile?.email ?? profile?.id ?? initials));
+      getAvatarPhotoSource(getAvatarPhotoIdForAccount(profile?.email ?? profile?.id ?? initials));
   const avatarEmoji = profile?.avatarKind === 'emoji' ? profile.avatarEmoji : undefined;
 
   const signOut = async () => {
@@ -99,13 +99,7 @@ export default function ProfileScreen() {
             style={styles.action}
             variant="electric"
           />
-          <ChaosButton
-            icon={<SignOut color={questColors.textPrimary} size={18} />}
-            label="Вийти"
-            onPress={signOut}
-            style={styles.action}
-            variant="outline"
-          />
+
         </View>
       </View>
 
