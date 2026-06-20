@@ -1,6 +1,8 @@
 import { getJsonItem, setJsonItem } from './app-storage';
 import { STORAGE_KEYS } from './auth-service';
 
+export const QUEST_TEXT_WORD_LIMIT = 180;
+
 export type Quest = {
   id: string;
   title: string;
@@ -34,6 +36,29 @@ function createQuestId() {
   return `quest-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+export function getQuestTextWordCount(text: string) {
+  return text.match(/\S+/g)?.length ?? 0;
+}
+
+export function limitQuestTextWords(text: string) {
+  let wordCount = 0;
+  let limitEnd = text.length;
+
+  for (const match of text.matchAll(/\S+/g)) {
+    wordCount += 1;
+
+    if (wordCount === QUEST_TEXT_WORD_LIMIT) {
+      limitEnd = (match.index ?? 0) + match[0].length;
+    }
+
+    if (wordCount > QUEST_TEXT_WORD_LIMIT) {
+      return text.slice(0, limitEnd);
+    }
+  }
+
+  return wordCount === QUEST_TEXT_WORD_LIMIT ? text.slice(0, limitEnd) : text;
+}
+
 export async function getQuests() {
   const quests = await getJsonItem<Quest[]>(STORAGE_KEYS.quests);
   if (quests?.length) return quests;
@@ -44,13 +69,14 @@ export async function getQuests() {
 
 export async function createQuest(title: string, description: string) {
   const quests = await getQuests();
+  const questTitle = limitQuestTextWords(title).trim();
   const quest: Quest = {
     completed: false,
     createdAt: new Date().toISOString(),
     description: description.trim() || 'Короткий квест без опису.',
     id: createQuestId(),
     points: 50,
-    title: title.trim(),
+    title: questTitle,
   };
   const nextQuests = [quest, ...quests];
 
