@@ -1,13 +1,17 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, ScrollView, Text, View, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { authenticateWithBiometrics } from '@/components/auth/biometric-auth';
+import { GlitchLogo } from '@/components/auth/GlitchLogo';
 import { PinEntryPanel } from '@/components/auth/pin-entry-panel';
 import { PIN_LENGTH } from '@/components/auth/pin-code.types';
-import { Button } from '@/components/ui/button';
+import { ChaosButton } from '@/components/ui/chaos';
 import { Notice } from '@/components/ui/status';
+import { Screen } from '@/components/ui/screen';
+import { questColors } from '@/constants/colors';
+import { radii, spacing } from '@/constants/spacing';
+import { typography } from '@/constants/typography';
 import {
   deleteLocalAccountData,
   getPinLockedUntil,
@@ -19,7 +23,6 @@ import {
   verifyPin,
 } from '@/services/auth-service';
 import { getResponsiveMetrics } from '@/utils/responsive';
-import { styles } from './login.styles';
 
 function formatLockTime(date: Date) {
   return new Intl.DateTimeFormat('uk-UA', {
@@ -53,7 +56,7 @@ export default function LoginScreen() {
 
     setIsBusy(true);
     setMessageTone('info');
-    setMessage('Підтвердьте біометрію у системному вікні.');
+    setMessage('Підтвердіть біометрію у системному вікні.');
 
     try {
       const result = await authenticateWithBiometrics();
@@ -160,7 +163,7 @@ export default function LoginScreen() {
   const confirmDeleteLocalData = useCallback(() => {
     Alert.alert(
       'Не памʼятаєте PIN?',
-      'Для безпеки PIN не можна скинути без входу. Можна видалити локальний профіль і створити його заново.',
+      'Можна відновити доступ через email або видалити локальний профіль і створити його заново.',
       [
         { style: 'cancel', text: 'Скасувати' },
         {
@@ -180,29 +183,19 @@ export default function LoginScreen() {
   }, [router]);
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <ScrollView
-        contentContainerStyle={[
-          styles.content,
-          { paddingHorizontal: layout.gutter },
-          layout.isWide && styles.contentWide,
-          compact && styles.contentCompact,
-        ]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
-        <View style={[styles.header, compact && styles.headerCompact]}>
-          <Text style={styles.eyebrow}>QuestMe</Text>
-          <Text style={[styles.title, compact && styles.titleCompact]}>Вхід</Text>
-          <Text style={[styles.subtitle, compact && styles.subtitleCompact]}>
+    <Screen contentStyle={styles.content} scroll={false}>
+      <View style={styles.card}>
+        <GlitchLogo compact={compact} />
+        <View style={styles.header}>
+          <Text style={styles.kicker}>SECURE ENTRY</Text>
+          <Text style={styles.title}>Вхід</Text>
+          <Text style={styles.subtitle}>
             {profile ? `Вітаємо, ${profile.name}.` : 'Завантажуємо профіль.'}
           </Text>
           <Notice tone={isBusy ? 'info' : messageTone}>{isBusy ? 'Зачекайте...' : message}</Notice>
-          <View style={[styles.dots, compact && styles.dotsCompact]}>
+          <View style={styles.dots}>
             {Array.from({ length: PIN_LENGTH }, (_, index) => (
-              <View
-                key={index}
-                style={[styles.dot, compact && styles.dotCompact, index < pin.length && styles.dotFilled]}
-              />
+              <View key={index} style={[styles.dot, index < pin.length && styles.dotFilled]} />
             ))}
           </View>
         </View>
@@ -210,22 +203,63 @@ export default function LoginScreen() {
         <PinEntryPanel cancelLabel="Очистити" compact={compact} onCancel={clearPin} onPressDigit={pressDigit} />
 
         <View style={styles.actions}>
-          <Button
-            disabled={isBusy || !biometricEnabled}
-            icon="unlock"
-            onPress={loginWithBiometrics}
-            title="Увійти через Face ID / Touch ID"
-            variant="secondary"
-          />
-          <Button
-            disabled={isBusy}
-            icon="refresh-cw"
-            onPress={confirmDeleteLocalData}
-            title="Забули PIN?"
-            variant="ghost"
-          />
+          <ChaosButton label="Face ID / Touch ID" onPress={loginWithBiometrics} variant={biometricEnabled ? 'electric' : 'ghost'} />
+          <ChaosButton label="Забули PIN?" onPress={confirmDeleteLocalData} variant="outline" />
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+    </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  actions: {
+    gap: spacing.sm,
+  },
+  card: {
+    backgroundColor: 'rgba(17,17,24,0.9)',
+    borderColor: questColors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    gap: spacing.lg,
+    padding: spacing.lg,
+  },
+  content: {
+    justifyContent: 'center',
+    paddingBottom: spacing.xl,
+    paddingTop: spacing.xl,
+  },
+  dot: {
+    borderColor: questColors.border,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    height: 12,
+    width: 12,
+  },
+  dotFilled: {
+    backgroundColor: questColors.acid,
+    borderColor: questColors.acid,
+  },
+  dots: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'center',
+  },
+  header: {
+    gap: spacing.sm,
+  },
+  kicker: {
+    ...typography.eyebrow,
+    color: questColors.acid,
+    textAlign: 'center',
+  },
+  subtitle: {
+    ...typography.body,
+    color: questColors.textSecondary,
+    textAlign: 'center',
+  },
+  title: {
+    ...typography.title,
+    color: questColors.textPrimary,
+    textAlign: 'center',
+  },
+});

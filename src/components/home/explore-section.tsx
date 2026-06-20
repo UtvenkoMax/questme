@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { SectionHeader } from '@/components/ui/layout';
 import { EmptyState } from '@/components/ui/status';
 import { TextField } from '@/components/ui/text-field';
-import { styles } from '@/app/(main)/quests.styles';
+import { styles } from '@/styles/quests.styles';
 import type { ResponsiveMetrics } from '@/utils/responsive';
 
 const EXPLORE_FILTERS = ['Усі', 'Поруч', 'Легкі', 'До 1 год', 'Для команди', 'Нові'] as const;

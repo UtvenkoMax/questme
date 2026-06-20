@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon-questme-generated.png",
     "scheme": "questme",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "ios": {
       "icon": "./assets/images/icon-questme-generated.png",
       "infoPlist": {
@@ -18,7 +18,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0A0A0F",
         "foregroundImage": "./assets/images/icon-questme-generated.png"
       },
       "predictiveBackGestureEnabled": false
@@ -54,8 +54,17 @@
           "locationAlwaysAndWhenInUsePermission": "QuestMe використовує геолокацію для відображення квестів поблизу."
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "QuestMe використовує фото та відео як доказ виконання завдань.",
+          "cameraPermission": "QuestMe використовує камеру, щоб ви могли зняти доказ виконання завдання.",
+          "microphonePermission": "QuestMe використовує мікрофон для відеодоказів виконання завдань."
+        }
+      ],
       "expo-localization",
-      "expo-font"
+      "expo-font",
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,

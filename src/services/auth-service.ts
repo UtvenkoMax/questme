@@ -1,6 +1,9 @@
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
+import { getAvatarPhotoIdForAccount, isAvatarPhotoId, type AvatarEmoji, type AvatarPhotoId } from '@/constants/avatarPhotos';
+import { createRandomGeneratedAvatarChoice, type AvatarChoice, type AvatarKind } from '@/services/avatar-service';
+
 import {
   deleteStorageItem,
   deleteStorageItems,
@@ -32,6 +35,10 @@ export type UserProfile = {
   email: string;
   createdAt: string;
   authProvider: AuthProvider;
+  avatarEmoji?: AvatarEmoji;
+  avatarId?: AvatarPhotoId;
+  avatarKind: AvatarKind;
+  avatarUri?: string;
 };
 
 export type AuthSession = {
@@ -91,6 +98,34 @@ function getAuthApiUrl() {
 
 function createLocalId() {
   return `local-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function normalizeProfileAvatar(profile: UserProfile): UserProfile {
+  if (profile.avatarKind === 'custom' && profile.avatarUri) return profile;
+  if (profile.avatarKind === 'emoji' && profile.avatarEmoji) return profile;
+  if (profile.avatarKind === 'generated' && isAvatarPhotoId(profile.avatarId)) return profile;
+  if (!profile.avatarKind && isAvatarPhotoId(profile.avatarId)) {
+    return {
+      ...profile,
+      avatarKind: 'generated',
+    };
+  }
+
+  return {
+    ...profile,
+    avatarId: getAvatarPhotoIdForAccount(`${profile.id}:${profile.email}`),
+    avatarKind: 'generated',
+  };
+}
+
+function withAvatarChoice(profile: Omit<UserProfile, 'avatarEmoji' | 'avatarId' | 'avatarKind' | 'avatarUri'>, choice: AvatarChoice): UserProfile {
+  return {
+    ...profile,
+    avatarEmoji: choice.avatarEmoji,
+    avatarId: choice.avatarId,
+    avatarKind: choice.avatarKind,
+    avatarUri: choice.avatarUri,
+  };
 }
 
 function createSixDigitCode() {
@@ -301,13 +336,25 @@ export async function registerAccount(input: RegistrationInput) {
     password: input.password,
   });
   const profileSource = backendResponse?.user ?? backendResponse?.profile;
-  const profile: UserProfile = {
+  const baseProfile = {
     authProvider: backendResponse ? 'backend' : 'local',
     createdAt: profileSource?.createdAt ?? new Date().toISOString(),
     email: profileSource?.email ?? email,
     id: profileSource?.id ?? createLocalId(),
     name: profileSource?.name ?? input.name.trim(),
+  } satisfies Omit<UserProfile, 'avatarEmoji' | 'avatarId' | 'avatarKind' | 'avatarUri'>;
+  const backendAvatarProfile: UserProfile = {
+    ...baseProfile,
+    avatarEmoji: profileSource?.avatarEmoji,
+    avatarId: isAvatarPhotoId(profileSource?.avatarId) ? profileSource.avatarId : undefined,
+    avatarKind: profileSource?.avatarKind ?? 'generated',
+    avatarUri: profileSource?.avatarUri,
   };
+  const avatarChoice =
+    profileSource?.avatarKind || profileSource?.avatarId || profileSource?.avatarEmoji || profileSource?.avatarUri
+      ? normalizeProfileAvatar(backendAvatarProfile)
+      : createRandomGeneratedAvatarChoice();
+  const profile = withAvatarChoice(baseProfile, avatarChoice);
 
   await Promise.all([
     setJsonItem(STORAGE_KEYS.profile, profile),
@@ -371,13 +418,20 @@ export async function verifyRecoveryCode(email: string, code: string) {
 
 export async function getUserProfile() {
   const profile = await getJsonItem<UserProfile>(STORAGE_KEYS.profile);
-  if (profile) return profile;
+  if (profile) {
+    const normalizedProfile = normalizeProfileAvatar(profile);
+    if (normalizedProfile.avatarId !== profile.avatarId) {
+      await setJsonItem(STORAGE_KEYS.profile, normalizedProfile);
+    }
+    return normalizedProfile;
+  }
 
   const legacyProfile = await getJsonItem<UserProfile>(LEGACY_PROFILE_KEY);
   if (!legacyProfile) return null;
 
-  await setJsonItem(STORAGE_KEYS.profile, legacyProfile);
-  return legacyProfile;
+  const normalizedProfile = normalizeProfileAvatar(legacyProfile);
+  await setJsonItem(STORAGE_KEYS.profile, normalizedProfile);
+  return normalizedProfile;
 }
 
 export async function updateUserProfile(profile: Pick<UserProfile, 'email' | 'name'>) {
@@ -389,6 +443,25 @@ export async function updateUserProfile(profile: Pick<UserProfile, 'email' | 'na
     email: normalizeEmail(profile.email),
     name: profile.name.trim(),
   };
+
+  await setJsonItem(STORAGE_KEYS.profile, nextProfile);
+  return nextProfile;
+}
+
+export async function updateUserAvatar(choice: AvatarChoice) {
+  const currentProfile = await getUserProfile();
+  if (!currentProfile) throw new Error('Профіль не знайдено.');
+
+  const nextProfile = withAvatarChoice(
+    {
+      authProvider: currentProfile.authProvider,
+      createdAt: currentProfile.createdAt,
+      email: currentProfile.email,
+      id: currentProfile.id,
+      name: currentProfile.name,
+    },
+    choice
+  );
 
   await setJsonItem(STORAGE_KEYS.profile, nextProfile);
   return nextProfile;

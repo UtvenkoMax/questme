@@ -6,7 +6,7 @@ import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import { Card } from '@/components/ui/card';
 import { ProgressBar } from '@/components/ui/layout';
 import { colors } from '@/theme';
-import { styles } from '@/app/(main)/quests.styles';
+import { styles } from '@/styles/quests.styles';
 
 type QuestHeroProps = {
   progress: {

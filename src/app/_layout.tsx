@@ -1,7 +1,10 @@
 import { Stack, type ErrorBoundaryProps } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
+import { useFonts as useInterFonts, Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
+import { JetBrainsMono_600SemiBold } from '@expo-google-fonts/jetbrains-mono';
+import { SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 import { StatusBar } from 'expo-status-bar';
 import { Text, View, StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, initialWindowMetrics, SafeAreaView } from 'react-native-safe-area-context';
 import { QueryClientProvider } from '@tanstack/react-query';
 
@@ -12,20 +15,26 @@ import { queryClient } from '@/lib/query-client';
 import { colors, spacing, typography } from '@/theme';
 import '@/locales/i18n';
 
-SplashScreen.setOptions({
-  duration: 250,
-  fade: true,
-});
-
 export default function RootLayout() {
+  const [fontsLoaded] = useInterFonts({
+    Inter_400Regular,
+    Inter_600SemiBold,
+    JetBrainsMono_600SemiBold,
+    SpaceGrotesk_700Bold,
+  });
+
+  if (!fontsLoaded) return null;
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-        <AppPreferencesProvider>
-          <RootStack />
-        </AppPreferencesProvider>
-      </SafeAreaProvider>
-    </QueryClientProvider>
+    <GestureHandlerRootView style={rootStyles.gestureRoot}>
+      <QueryClientProvider client={queryClient}>
+        <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+          <AppPreferencesProvider>
+            <RootStack />
+          </AppPreferencesProvider>
+        </SafeAreaProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -35,7 +44,7 @@ function RootStack() {
   return (
     <>
       <FaceIdStartupPrompt />
-      <StatusBar style={theme.isDark ? 'light' : 'dark'} />
+      <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false }} />
     </>
   );
@@ -80,5 +89,11 @@ const errorStyles = StyleSheet.create({
   title: {
     ...typography.titleCompact,
     color: colors.ink,
+  },
+});
+
+const rootStyles = StyleSheet.create({
+  gestureRoot: {
+    flex: 1,
   },
 });

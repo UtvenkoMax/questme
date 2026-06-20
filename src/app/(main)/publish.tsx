@@ -1,247 +1,320 @@
-import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import {
+  LayoutChangeEvent,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type GestureResponderEvent,
+} from 'react-native';
 
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { PageHeader, Pill, SectionHeader } from '@/components/ui/layout';
+import { QuestPreviewCard } from '@/components/quest/QuestPreviewCard';
+import { ChaosBadge, ChaosButton, SectionKicker } from '@/components/ui/chaos';
+import { Notice } from '@/components/ui/status';
 import { Screen } from '@/components/ui/screen';
-import { EmptyState, Notice } from '@/components/ui/status';
-import { TextField } from '@/components/ui/text-field';
-import { colors, radii, spacing, typography } from '@/theme';
-import { getResponsiveMetrics } from '@/utils/responsive';
+import { questColors } from '@/constants/colors';
+import { radii, spacing } from '@/constants/spacing';
+import { typography } from '@/constants/typography';
+import { createQuest } from '@/services/quest-service';
 
-type CommunityTask = {
-  author: string;
-  description: string;
-  id: string;
-  location: string;
-  reward: string;
-  title: string;
-};
-
-const INITIAL_TASKS: CommunityTask[] = [
-  {
-    author: 'Анна',
-    description: 'Зробити фото трьох історичних дверей на Подолі і додати короткий факт про кожні.',
-    id: 'doors',
-    location: 'Поділ',
-    reward: '+120 XP',
-    title: 'Мисливці за старими дверима',
-  },
-  {
-    author: 'Дмитро',
-    description: 'Пробігти або пройти набережною 3 км і зняти короткий фінішний кліп.',
-    id: 'river',
-    location: 'Набережна',
-    reward: '+90 XP',
-    title: 'Ранковий маршрут біля води',
-  },
-  {
-    author: 'Софія',
-    description: 'Знайти кавʼярню з локальним обсмаженням, зробити чекін і порадити напій.',
-    id: 'coffee',
-    location: 'Центр',
-    reward: '+75 XP',
-    title: 'Кавовий чекін',
-  },
+const examples = [
+  'Зніми відео, як ти 30 секунд говориш голосом NPC',
+  'Придумай найсмішніший слоган для мого фото',
+  'Зроби мем з кадру, де я дивлюсь на чек',
+  'Зніми реакцію друга на дивний комплімент',
 ];
 
-export default function PublishScreen() {
-  const { height, width } = useWindowDimensions();
-  const layout = useMemo(() => getResponsiveMetrics(width, height), [height, width]);
-  const [tasks, setTasks] = useState(INITIAL_TASKS);
-  const [title, setTitle] = useState('');
-  const [location, setLocation] = useState('');
-  const [description, setDescription] = useState('');
-  const [message, setMessage] = useState<{ text: string; tone: 'danger' | 'success' } | null>(null);
+const proofTypes = ['Відео', 'Фото'];
+const deadlines = ['6 год', '12 год', '24 год', '2 дні', '7 днів'];
 
-  const canPublish = title.trim().length >= 3 && description.trim().length >= 10;
+export default function CreateQuestScreen() {
+  const router = useRouter();
+  const [step, setStep] = useState(0);
+  const [task, setTask] = useState('');
+  const [proofType, setProofType] = useState('Відео');
+  const [reward, setReward] = useState(50);
+  const [deadline, setDeadline] = useState('24 год');
+  const [message, setMessage] = useState('');
 
-  const publishTask = () => {
-    if (!canPublish) {
-      setMessage({ text: 'Додайте назву і короткий опис завдання.', tone: 'danger' });
+  const placeholder = useMemo(() => examples[Math.floor(Math.random() * examples.length)], []);
+  const canContinue = step === 0 ? task.trim().length >= 10 : true;
+
+  const next = () => {
+    if (!canContinue) {
+      setMessage('Додайте конкретний текст квесту мінімум на 10 символів.');
       return;
     }
+    setMessage('');
+    setStep((value) => Math.min(value + 1, 4));
+  };
 
-    const nextTask: CommunityTask = {
-      author: 'Ви',
-      description: description.trim(),
-      id: `${Date.now()}`,
-      location: location.trim() || 'Локація не вказана',
-      reward: '+50 XP',
-      title: title.trim(),
-    };
+  const back = () => {
+    setMessage('');
+    setStep((value) => Math.max(value - 1, 0));
+  };
 
-    setTasks((currentTasks) => [nextTask, ...currentTasks]);
-    setTitle('');
-    setLocation('');
-    setDescription('');
-    setMessage({ text: 'Завдання опубліковано у стрічці спільноти.', tone: 'success' });
+  const publish = async () => {
+    await createQuest(task.trim(), `${proofType} · ${reward} грн · ${deadline}`);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    setMessage('Квест опубліковано. Він зʼявиться у трекері.');
+    setTimeout(() => router.push('/tasks' as never), 480);
   };
 
   return (
-    <Screen contentStyle={styles.content} keyboard wide>
-      <PageHeader
-        eyebrow="Community"
-        subtitle="Місце, де люди публікують завдання для інших учасників QuestMe."
-        title="Опублікувати завдання"
-      />
+    <Screen contentStyle={styles.content} keyboard>
+      <SectionKicker eyebrow={`Крок ${step + 1}/5`} title="Квест-будівник" />
+      <View style={styles.progress}>
+        {Array.from({ length: 5 }, (_, index) => (
+          <View key={index} style={[styles.progressDot, index <= step && styles.progressDotActive]} />
+        ))}
+      </View>
 
-      <View style={[styles.layout, layout.isWide && styles.layoutWide]}>
-        <Card style={styles.formCard}>
-          <SectionHeader
-            subtitle="Сформулюйте завдання так, щоб його можна було виконати і підтвердити."
-            title="Нове завдання"
-          />
-          <TextField
-            label="Назва"
-            onChangeText={setTitle}
-            placeholder="Наприклад: знайти найкращий вид на місто"
-            value={title}
-          />
-          <TextField
-            label="Локація"
-            onChangeText={setLocation}
-            placeholder="Район, парк або точка старту"
-            value={location}
-          />
-          <TextField
-            label="Опис"
-            multiline
-            onChangeText={setDescription}
-            placeholder="Що треба зробити, як підтвердити виконання, скільки часу це займе"
-            value={description}
-          />
-          {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
-          <Button disabled={!canPublish} icon="send" onPress={publishTask} title="Опублікувати" />
-        </Card>
-
-        <View style={styles.feed}>
-          <SectionHeader subtitle="Завдання, які вже додали учасники" title="Стрічка спільноти" />
-          {tasks.length ? (
-            tasks.map((task) => <CommunityTaskCard key={task.id} task={task} />)
-          ) : (
-            <EmptyState
-              icon="send"
-              text="Опублікуйте перше завдання, і воно зʼявиться у стрічці спільноти."
-              title="У стрічці поки немає завдань"
+      <View style={styles.card}>
+        {step === 0 ? (
+          <View style={styles.step}>
+            <Text style={styles.stepTitle}>Текст завдання</Text>
+            <TextInput
+              multiline
+              onChangeText={setTask}
+              placeholder={placeholder}
+              placeholderTextColor={questColors.textSecondary}
+              selectionColor={questColors.acid}
+              style={styles.textarea}
+              value={task}
             />
-          )}
-        </View>
+            <Text style={styles.counter}>{task.length}/180 символів</Text>
+          </View>
+        ) : null}
+
+        {step === 1 ? (
+          <View style={styles.step}>
+            <Text style={styles.stepTitle}>Тип виконання</Text>
+            <View style={styles.optionGrid}>
+              {proofTypes.map((type) => (
+                <Option key={type} active={proofType === type} label={type} onPress={() => setProofType(type)} />
+              ))}
+            </View>
+          </View>
+        ) : null}
+
+        {step === 2 ? (
+          <View style={styles.step}>
+            <Text style={styles.stepTitle}>Сума оплати</Text>
+            <Text style={styles.reward}>{reward} грн</Text>
+            <RewardSlider value={reward} onChange={setReward} />
+            <View style={styles.quickAmounts}>
+              {[25, 50, 100, 250].map((amount) => (
+                <Option key={amount} active={reward === amount} label={`${amount}`} onPress={() => setReward(amount)} compact />
+              ))}
+            </View>
+          </View>
+        ) : null}
+
+        {step === 3 ? (
+          <View style={styles.step}>
+            <Text style={styles.stepTitle}>Дедлайн</Text>
+            <View style={styles.deadlineWheel}>
+              {deadlines.map((item) => (
+                <Option key={item} active={deadline === item} label={item} onPress={() => setDeadline(item)} />
+              ))}
+            </View>
+          </View>
+        ) : null}
+
+        {step === 4 ? (
+          <View style={styles.step}>
+            <Text style={styles.stepTitle}>Перевірка</Text>
+            <QuestPreviewCard deadline={deadline} proofType={proofType} reward={reward} title={task} onPublish={publish} />
+            <View style={styles.paymentNote}>
+              <ChaosBadge tone="ember">LiqPay / Monobank ready</ChaosBadge>
+              <Text style={styles.noteText}>Інтерфейс платежу підготовлено як draft, API ключі підключаються окремо.</Text>
+            </View>
+          </View>
+        ) : null}
+      </View>
+
+      {message ? <Notice tone={message.includes('опубліковано') ? 'success' : 'danger'}>{message}</Notice> : null}
+
+      <View style={styles.actions}>
+        <ChaosButton label="Назад" onPress={back} style={styles.action} variant="outline" />
+        {step < 4 ? <ChaosButton label="Далі" onPress={next} style={styles.action} /> : null}
       </View>
     </Screen>
   );
 }
 
-function CommunityTaskCard({ task }: { task: CommunityTask }) {
+function Option({
+  active,
+  compact = false,
+  label,
+  onPress,
+}: {
+  active: boolean;
+  compact?: boolean;
+  label: string;
+  onPress: () => void;
+}) {
   return (
-    <Card style={styles.taskCard}>
-      <View style={styles.taskHeader}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{task.author.slice(0, 1).toUpperCase()}</Text>
-        </View>
-        <View style={styles.taskCopy}>
-          <Text style={styles.taskTitle}>{task.title}</Text>
-          <Text style={styles.taskAuthor}>Опублікував: {task.author}</Text>
-        </View>
-        <Pill tone="primary">{task.reward}</Pill>
-      </View>
-      <Text style={styles.taskDescription}>{task.description}</Text>
-      <View style={styles.taskFooter}>
-        <View style={styles.meta}>
-          <Feather color={colors.inkSubtle} name="map-pin" size={14} />
-          <Text numberOfLines={1} style={styles.metaText}>
-            {task.location}
-          </Text>
-        </View>
-        <View style={styles.meta}>
-          <Feather color={colors.inkSubtle} name="video" size={14} />
-          <Text style={styles.metaText}>Відео-підтвердження</Text>
-        </View>
-      </View>
-    </Card>
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.option, compact && styles.optionCompact, active && styles.optionActive, pressed && styles.pressed]}>
+      <Text style={[styles.optionText, active && styles.optionTextActive]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function RewardSlider({ onChange, value }: { onChange: (value: number) => void; value: number }) {
+  const [width, setWidth] = useState(1);
+  const percent = (value - 10) / (5000 - 10);
+
+  const update = (event: GestureResponderEvent) => {
+    const nextPercent = Math.min(Math.max(event.nativeEvent.locationX / width, 0), 1);
+    const nextValue = Math.round((10 + nextPercent * (5000 - 10)) / 5) * 5;
+    onChange(nextValue);
+  };
+
+  return (
+    <Pressable
+      onLayout={(event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width)}
+      onPress={update}
+      style={styles.sliderTrack}>
+      <View style={[styles.sliderFill, { width: `${percent * 100}%` }]} />
+      <View style={[styles.sliderThumb, { left: `${percent * 100}%` }]} />
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    gap: spacing.xxl,
-    paddingBottom: spacing.huge,
-  },
-  layout: {
-    gap: spacing.xxl,
-  },
-  layoutWide: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-  },
-  formCard: {
-    flex: 0.9,
-    gap: spacing.lg,
-    minWidth: 0,
-  },
-  feed: {
-    flex: 1.1,
-    gap: spacing.lg,
-    minWidth: 0,
-  },
-  taskCard: {
-    gap: spacing.lg,
-  },
-  taskHeader: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  avatar: {
-    alignItems: 'center',
-    backgroundColor: colors.primarySoft,
-    borderRadius: radii.pill,
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
-  avatarText: {
-    ...typography.captionStrong,
-    color: colors.primary,
-  },
-  taskCopy: {
+  action: {
     flex: 1,
-    gap: spacing.xs,
-    minWidth: 0,
   },
-  taskTitle: {
-    ...typography.subtitle,
-    color: colors.ink,
-    fontWeight: '600',
+  actions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
-  taskAuthor: {
+  card: {
+    backgroundColor: questColors.surface,
+    borderColor: questColors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    padding: spacing.lg,
+  },
+  content: {
+    gap: spacing.lg,
+    paddingBottom: 120,
+  },
+  counter: {
     ...typography.caption,
-    color: colors.inkSubtle,
+    color: questColors.textSecondary,
+    textAlign: 'right',
   },
-  taskDescription: {
-    ...typography.body,
-    color: colors.inkMuted,
+  deadlineWheel: {
+    gap: spacing.sm,
   },
-  taskFooter: {
+  noteText: {
+    ...typography.caption,
+    color: questColors.textSecondary,
+  },
+  option: {
+    alignItems: 'center',
+    backgroundColor: questColors.surfaceUp,
+    borderColor: questColors.border,
+    borderRadius: radii.xs,
+    borderWidth: 1,
+    flex: 1,
+    minHeight: 58,
+    justifyContent: 'center',
+    minWidth: 118,
+    padding: spacing.md,
+  },
+  optionActive: {
+    backgroundColor: 'rgba(196,255,0,0.14)',
+    borderColor: questColors.acid,
+  },
+  optionCompact: {
+    minHeight: 44,
+    minWidth: 72,
+  },
+  optionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
-  meta: {
-    alignItems: 'center',
-    backgroundColor: colors.surfacePearl,
-    borderRadius: radii.pill,
+  optionText: {
+    ...typography.label,
+    color: questColors.textSecondary,
+  },
+  optionTextActive: {
+    color: questColors.acid,
+  },
+  paymentNote: {
+    gap: spacing.sm,
+  },
+  pressed: {
+    opacity: 0.72,
+  },
+  progress: {
     flexDirection: 'row',
     gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
   },
-  metaText: {
-    ...typography.caption,
-    color: colors.inkMuted,
+  progressDot: {
+    backgroundColor: questColors.border,
+    borderRadius: radii.pill,
+    flex: 1,
+    height: 5,
+  },
+  progressDotActive: {
+    backgroundColor: questColors.acid,
+  },
+  quickAmounts: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  reward: {
+    ...typography.display,
+    color: questColors.ember,
+  },
+  sliderFill: {
+    backgroundColor: questColors.ember,
+    borderRadius: radii.pill,
+    height: '100%',
+  },
+  sliderThumb: {
+    backgroundColor: questColors.acid,
+    borderRadius: radii.pill,
+    height: 24,
+    marginLeft: -12,
+    position: 'absolute',
+    top: -8,
+    width: 24,
+  },
+  sliderTrack: {
+    backgroundColor: '#29293A',
+    borderRadius: radii.pill,
+    height: 8,
+    marginVertical: spacing.md,
+  },
+  step: {
+    gap: spacing.lg,
+  },
+  stepTitle: {
+    ...typography.titleCompact,
+    color: questColors.textPrimary,
+  },
+  textarea: {
+    ...typography.subtitle,
+    backgroundColor: questColors.surfaceUp,
+    borderColor: questColors.border,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    color: questColors.textPrimary,
+    minHeight: 180,
+    padding: spacing.md,
+    textAlignVertical: 'top',
   },
 });

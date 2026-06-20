@@ -1,87 +1,191 @@
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
-import { FlatList, View, useWindowDimensions } from 'react-native';
+import { useRef, useState } from 'react';
+import {
+  FlatList,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+  type ImageSourcePropType,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 
-import { OnboardingPanel } from '@/components/onboarding/onboarding-panel';
-import { SlideItem } from '@/components/onboarding/slide-item';
-import { SLIDES } from '@/components/onboarding/slides-data';
-import { onboardingStyles as styles } from '@/components/onboarding/onboarding.styles';
+import { StepIndicator } from '@/components/auth/StepIndicator';
+import { ChaosButton } from '@/components/ui/chaos';
+import { gradients, questColors } from '@/constants/colors';
+import { radii, spacing } from '@/constants/spacing';
+import { typography } from '@/constants/typography';
+import { DEFAULT_PREFERENCES } from '@/services/preferences-service';
 import { useAppPreferences } from '@/components/providers/app-preferences';
 import { setOnboardingSeen } from '@/services/auth-service';
-import { DEFAULT_PREFERENCES, type InterestId } from '@/services/preferences-service';
-import { getResponsiveMetrics } from '@/utils/responsive';
+
+type Slide = {
+  id: string;
+  title: string;
+  kicker: string;
+  counter?: string;
+  image: ImageSourcePropType;
+};
+
+const slides: Slide[] = [
+  {
+    id: 'quester',
+    title: 'Роби дурниці.\nОтримуй гроші.',
+    kicker: 'Ставай квестером',
+    image: require('@/assets/images/startimage.png'),
+  },
+  {
+    id: 'creator',
+    title: 'Придумай завдання —\nзаплати за виконання.',
+    kicker: 'Ставай автором',
+    counter: '+2,341 грн зароблено сьогодні',
+    image: require('@/assets/images/onboarding2.png'),
+  },
+  {
+    id: 'join',
+    title: '14,892 активних квестів\nпрямо зараз',
+    kicker: 'Приєднуйся',
+    image: require('@/assets/images/onboarding3.png'),
+  },
+];
 
 export default function OnboardingScreen() {
   const router = useRouter();
   const { updatePreferences } = useAppPreferences();
-  const flatListRef = useRef<FlatList>(null);
-  const { height, width } = useWindowDimensions();
-  const layout = useMemo(() => getResponsiveMetrics(width, height), [height, width]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedInterests, setSelectedInterests] = useState<InterestId[]>(DEFAULT_PREFERENCES.interests);
-
-  const isLastSlide = currentIndex === SLIDES.length - 1;
-  const currentSlide = SLIDES[currentIndex];
-
-  const goToNext = () => {
-    if (currentIndex < SLIDES.length - 1) {
-      flatListRef.current?.scrollToIndex({ animated: true, index: currentIndex + 1 });
-      setCurrentIndex(currentIndex + 1);
-    }
-  };
+  const listRef = useRef<FlatList<Slide>>(null);
+  const { width } = useWindowDimensions();
+  const [index, setIndex] = useState(0);
 
   const complete = async () => {
-    await updatePreferences({ interests: selectedInterests });
+    await updatePreferences({ interests: DEFAULT_PREFERENCES.interests });
     await setOnboardingSeen();
     router.replace('/register');
   };
 
-  const toggleInterest = (interestId: InterestId) => {
-    setSelectedInterests((currentInterests) => {
-      if (currentInterests.includes(interestId)) {
-        const nextInterests = currentInterests.filter((id) => id !== interestId);
-        return nextInterests.length ? nextInterests : currentInterests;
-      }
+  const next = () => {
+    if (index < slides.length - 1) {
+      listRef.current?.scrollToIndex({ animated: true, index: index + 1 });
+      setIndex(index + 1);
+      return;
+    }
 
-      return [...currentInterests, interestId];
-    });
+    complete();
+  };
+
+  const onScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    setIndex(Math.round(event.nativeEvent.contentOffset.x / width));
   };
 
   return (
-    <View style={[styles.screen, { backgroundColor: currentSlide.bgFrom }]}>
+    <View style={styles.screen}>
       <FlatList
-        data={SLIDES}
-        extraData={width}
-        getItemLayout={(_, index) => ({
-          index,
-          length: width,
-          offset: width * index,
-        })}
+        data={slides}
         horizontal
         keyExtractor={(item) => item.id}
-        onMomentumScrollEnd={(event) => {
-          const index = Math.round(event.nativeEvent.contentOffset.x / width);
-          setCurrentIndex(Math.min(Math.max(index, 0), SLIDES.length - 1));
-        }}
+        onMomentumScrollEnd={onScrollEnd}
         pagingEnabled
-        ref={flatListRef}
-        renderItem={({ item }) => <SlideItem item={item} width={width} />}
+        ref={listRef}
+        renderItem={({ item }) => <SlideView slide={item} width={width} />}
         showsHorizontalScrollIndicator={false}
-        style={styles.slideList}
       />
 
-      <OnboardingPanel
-        currentIndex={currentIndex}
-        isLastSlide={isLastSlide}
-        layout={layout}
-        onComplete={complete}
-        onFallback={complete}
-        onNext={goToNext}
-        screenWidth={width}
-        selectedInterestIds={selectedInterests}
-        slide={currentSlide}
-        onToggleInterest={toggleInterest}
-      />
+      <View style={styles.bottom}>
+        <StepIndicator count={slides.length} index={index} />
+        {index === slides.length - 1 ? (
+          <View style={styles.ctaRow}>
+            <ChaosButton label="Увійти" onPress={() => router.replace('/login')} style={styles.ctaHalf} variant="outline" />
+            <ChaosButton label="Почати безкоштовно" onPress={complete} style={styles.ctaGrow} />
+          </View>
+        ) : (
+          <ChaosButton label="Далі" onPress={next} />
+        )}
+      </View>
     </View>
   );
 }
+
+function SlideView({ slide, width }: { slide: Slide; width: number }) {
+  return (
+    <View style={[styles.slide, { width }]}>
+      <Image contentFit="cover" source={slide.image} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={gradients.heroShade} style={StyleSheet.absoluteFill} />
+      <View style={styles.noiseGrid} pointerEvents="none" />
+      <Animated.View entering={FadeInUp.duration(360).springify()} style={styles.copy}>
+        <Text style={styles.kicker}>{slide.kicker}</Text>
+        <Text style={styles.title}>{slide.title}</Text>
+        {slide.counter ? (
+          <View style={styles.counter}>
+            <Text style={styles.counterText}>{slide.counter}</Text>
+          </View>
+        ) : null}
+      </Animated.View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  bottom: {
+    bottom: spacing.xl,
+    gap: spacing.lg,
+    left: spacing.lg,
+    position: 'absolute',
+    right: spacing.lg,
+  },
+  counter: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(196,255,0,0.14)',
+    borderColor: 'rgba(196,255,0,0.48)',
+    borderRadius: radii.xs,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  counterText: {
+    ...typography.label,
+    color: questColors.acid,
+  },
+  copy: {
+    bottom: 164,
+    gap: spacing.md,
+    left: spacing.lg,
+    position: 'absolute',
+    right: spacing.lg,
+  },
+  ctaGrow: {
+    flex: 1.4,
+  },
+  ctaHalf: {
+    flex: 0.8,
+  },
+  ctaRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  kicker: {
+    ...typography.label,
+    color: questColors.acid,
+    textTransform: 'uppercase',
+  },
+  noiseGrid: {
+    ...StyleSheet.absoluteFillObject,
+    borderColor: 'rgba(240,238,255,0.06)',
+    borderWidth: 1,
+  },
+  screen: {
+    backgroundColor: questColors.void,
+    flex: 1,
+  },
+  slide: {
+    backgroundColor: questColors.void,
+    flex: 1,
+  },
+  title: {
+    ...typography.display,
+    color: questColors.textPrimary,
+    maxWidth: 430,
+  },
+});

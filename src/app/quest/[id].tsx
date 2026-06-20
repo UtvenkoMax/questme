@@ -14,7 +14,7 @@ import { ProgressRing } from '@/components/ui/progress-ring';
 import { EmptyState } from '@/components/ui/status';
 import { colors } from '@/theme';
 import { getResponsiveMetrics } from '@/utils/responsive';
-import { styles } from './[id].styles';
+import { styles } from '@/styles/quest-detail.styles';
 
 function getQuestId(id: string | string[] | undefined) {
   return Array.isArray(id) ? id[0] : id;

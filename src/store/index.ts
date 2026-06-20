@@ -26,3 +26,6 @@ export {
   selectIsTracking,
 } from './map-store';
 export type { MapStore } from './map-store';
+
+export { useWalletStore, selectBalance, selectFormattedBalance, selectTransactions } from './wallet-store';
+export type { WalletStore } from './wallet-store';

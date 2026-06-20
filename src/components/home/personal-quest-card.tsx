@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Pill } from '@/components/ui/layout';
 import { type Quest as PersonalQuest } from '@/services/quest-service';
 import { colors } from '@/theme';
-import { styles } from '@/app/(main)/quests.styles';
+import { styles } from '@/styles/quests.styles';
 
 type PersonalQuestCardProps = {
   onToggle: () => void;

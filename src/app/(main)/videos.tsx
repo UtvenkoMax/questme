@@ -1,330 +1,268 @@
-import { Feather } from '@expo/vector-icons';
-import { Image } from 'expo-image';
-import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+  type ViewToken,
+} from 'react-native';
+import Animated, {
+  FadeIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 
-import { Card } from '@/components/ui/card';
-import { PageHeader, Pill, SectionHeader } from '@/components/ui/layout';
-import { Screen } from '@/components/ui/screen';
-import { EmptyState } from '@/components/ui/status';
-import { colors, radii, shadows, spacing, typography } from '@/theme';
-import { getResponsiveMetrics } from '@/utils/responsive';
+import { VideoActions } from '@/components/shorts/VideoActions';
+import { VideoOverlay } from '@/components/shorts/VideoOverlay';
+import { VideoPlayer } from '@/components/shorts/VideoPlayer';
+import { questColors } from '@/constants/colors';
+import { radii, spacing } from '@/constants/spacing';
+import { typography } from '@/constants/typography';
+import { useShorts } from '@/hooks/useShorts';
+import { type YouTubeShort } from '@/services/youtube.service';
 
-type CompletedVideo = {
-  author: string;
-  id: string;
-  image: number;
-  likes: string;
-  location: string;
-  quest: string;
-  title: string;
-  views: string;
-  duration: string;
-};
-
-const COMPLETED_VIDEOS: CompletedVideo[] = [
-  {
-    author: 'Марія',
-    duration: '0:34',
-    id: 'steps',
-    image: require('@/assets/images/quest2.png'),
-    likes: '184',
-    location: 'Парк Шевченка',
-    quest: '10 000 кроків',
-    title: 'Фініш ранкової прогулянки',
-    views: '1.2K',
-  },
-  {
-    author: 'Олег',
-    duration: '0:41',
-    id: 'old-town',
-    image: require('@/assets/images/quest1.png'),
-    likes: '96',
-    location: 'Поділ',
-    quest: 'Історичний маршрут',
-    title: 'Знайшов останню точку квесту',
-    views: '842',
-  },
-  {
-    author: 'Іра',
-    duration: '0:28',
-    id: 'coffee',
-    image: require('@/assets/images/quest3.png'),
-    likes: '231',
-    location: 'Центр Києва',
-    quest: 'Секретні кавʼярні',
-    title: 'Командне завдання виконано',
-    views: '2.4K',
-  },
-];
-
-export default function VideosScreen() {
+export default function ShortsScreen() {
+  const router = useRouter();
   const { height, width } = useWindowDimensions();
-  const layout = useMemo(() => getResponsiveMetrics(width, height), [height, width]);
-  const featured = COMPLETED_VIDEOS[0];
+  const {
+    error,
+    hasMore,
+    items,
+    loadMore,
+    loading,
+    loadingMore,
+    refresh,
+    refreshing,
+    warning,
+  } = useShorts();
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [listHeight, setListHeight] = useState<number>(0);
+
+  const itemHeight = listHeight || height;
+  const itemWidth = width >= 760 ? 460 : width;
+
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 50,
+    minimumViewTime: 80,
+  }).current;
+
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken<YouTubeShort>[] }) => {
+    const firstVisible = viewableItems.find((item) => item.isViewable)?.item;
+    if (firstVisible) setActiveId(firstVisible.id);
+  }).current;
+
+  const renderItem = useCallback(
+    ({ item }: { item: YouTubeShort }) => (
+      <ShortsItem
+        active={activeId ? activeId === item.id : items[0]?.id === item.id}
+        height={itemHeight}
+        short={item}
+        width={itemWidth}
+        onTryQuest={() => router.push('/publish')}
+      />
+    ),
+    [activeId, itemHeight, itemWidth, items, router]
+  );
+
+  const footer = useMemo(() => {
+    if (!loadingMore && !hasMore) {
+      return (
+        <View style={[styles.footer, { width: itemWidth }]}>
+          <Text style={styles.footerText}>Це все, що YouTube API повернув для поточного запиту.</Text>
+        </View>
+      );
+    }
+
+    if (!loadingMore) return null;
+
+    return (
+      <View style={[styles.footer, { width: itemWidth }]}>
+        <ActivityIndicator color={questColors.acid} />
+        <Text style={styles.footerText}>Підвантажуємо ще Shorts...</Text>
+      </View>
+    );
+  }, [hasMore, itemWidth, loadingMore]);
+
+  if (loading) {
+    return <ShortsSkeleton />;
+  }
 
   return (
-    <Screen contentStyle={styles.content} wide>
-      <PageHeader
-        eyebrow="QuestMe Clips"
-        subtitle="Короткі відео з виконаними завданнями, фінішами маршрутів і моментами команди."
-        title="Виконані завдання у відео"
-      />
-
-      {featured ? (
-        <FeaturedVideo video={featured} />
-      ) : (
-        <EmptyState
-          icon="video"
-          text="Коли користувачі завершать квести з відео-підтвердженням, кліпи зʼявляться тут."
-          title="Відео ще немає"
-        />
+    <View
+      style={styles.screen}
+      onLayout={(e) => {
+        const { height: layoutHeight } = e.nativeEvent.layout;
+        if (layoutHeight > 0 && layoutHeight !== listHeight) {
+          setListHeight(layoutHeight);
+        }
+      }}
+    >
+      {(warning || error) && (
+        <View style={styles.toastNotice}>
+          <Text style={styles.noticeTitle}>{error ? 'Помилка завантаження' : 'Локальна версія'}</Text>
+          <Text style={styles.noticeText}>{error || warning}</Text>
+        </View>
       )}
-
-      <View style={styles.feed}>
-        <SectionHeader subtitle="Нові завершення від спільноти" title="Стрічка коротких відео" />
-        {COMPLETED_VIDEOS.length ? (
-          <View style={[styles.grid, layout.listColumns > 1 && styles.gridWide]}>
-            {COMPLETED_VIDEOS.map((video) => (
-              <View key={video.id} style={[styles.gridItem, layout.listColumns > 1 && styles.gridItemWide]}>
-                <VideoCard video={video} />
-              </View>
-            ))}
-          </View>
-        ) : (
-          <EmptyState
-            icon="play-circle"
-            text="Стрічка заповниться після перших завершених квестів."
-            title="Немає коротких відео"
+      <FlatList
+        ListFooterComponent={footer}
+        contentContainerStyle={styles.listContent}
+        data={items}
+        decelerationRate="fast"
+        getItemLayout={(_, index) => ({
+          index,
+          length: itemHeight,
+          offset: itemHeight * index,
+        })}
+        initialNumToRender={2}
+        keyExtractor={(item) => item.id}
+        maxToRenderPerBatch={3}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.72}
+        onViewableItemsChanged={onViewableItemsChanged}
+        pagingEnabled
+        refreshControl={
+          <RefreshControl
+            colors={[questColors.acid, questColors.electric]}
+            onRefresh={refresh}
+            progressBackgroundColor={questColors.surface}
+            refreshing={refreshing}
+            tintColor={questColors.acid}
           />
-        )}
-      </View>
-    </Screen>
+        }
+        removeClippedSubviews={false}
+        renderItem={renderItem}
+        showsVerticalScrollIndicator={false}
+        snapToAlignment="start"
+        snapToInterval={itemHeight}
+        viewabilityConfig={viewabilityConfig}
+        windowSize={5}
+      />
+    </View>
   );
 }
 
-function FeaturedVideo({ video }: { video: CompletedVideo }) {
+function ShortsItem({
+  active,
+  height,
+  onTryQuest,
+  short,
+  width,
+}: {
+  active: boolean;
+  height: number;
+  onTryQuest: () => void;
+  short: YouTubeShort;
+  width: number;
+}) {
   return (
-    <View style={styles.featured}>
-      <Image contentFit="cover" source={video.image} style={styles.featuredImage} />
-      <View style={styles.featuredShade} />
-      <View style={styles.featuredTop}>
-        <Pill tone="primary">Виконано</Pill>
-        <Text style={styles.duration}>{video.duration}</Text>
-      </View>
-      <View style={styles.featuredBottom}>
-        <Pressable accessibilityLabel="Переглянути коротке відео" accessibilityRole="button" style={styles.playButton}>
-          <Feather color={colors.white} name="play" size={22} />
-        </Pressable>
-        <View style={styles.featuredCopy}>
-          <Text style={styles.featuredTitle}>{video.title}</Text>
-          <Text style={styles.featuredMeta}>
-            {video.author} · {video.quest} · {video.location}
-          </Text>
-        </View>
+    <View style={[styles.itemShell, { height }]}>
+      <View style={[styles.item, { height, width }]}>
+        <VideoPlayer active={active} short={short} />
+        <VideoActions short={short} />
+        <VideoOverlay short={short} onTryQuest={onTryQuest} />
       </View>
     </View>
   );
 }
 
-function VideoCard({ video }: { video: CompletedVideo }) {
-  return (
-    <Card padded={false} style={styles.card}>
-      <View style={styles.thumbnail}>
-        <Image contentFit="cover" source={video.image} style={styles.thumbnailImage} />
-        <View style={styles.thumbnailShade} />
-        <View style={styles.thumbnailPlay}>
-          <Feather color={colors.white} name="play" size={16} />
-        </View>
-        <Text style={styles.thumbnailDuration}>{video.duration}</Text>
-      </View>
-      <View style={styles.cardBody}>
-        <Text numberOfLines={2} style={styles.cardTitle}>
-          {video.title}
-        </Text>
-        <Text numberOfLines={1} style={styles.cardMeta}>
-          {video.author} · {video.quest}
-        </Text>
-        <View style={styles.stats}>
-          <Stat icon="eye" value={video.views} />
-          <Stat icon="heart" value={video.likes} />
-          <Stat icon="map-pin" value={video.location} />
-        </View>
-      </View>
-    </Card>
-  );
-}
+function ShortsSkeleton() {
+  const opacity = useSharedValue(0.35);
+  opacity.value = withRepeat(withTiming(1, { duration: 760 }), -1, true);
+  const shimmer = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
-function Stat({ icon, value }: { icon: React.ComponentProps<typeof Feather>['name']; value: string }) {
   return (
-    <View style={styles.stat}>
-      <Feather color={colors.inkSubtle} name={icon} size={14} />
-      <Text numberOfLines={1} style={styles.statText}>
-        {value}
-      </Text>
+    <View style={styles.skeletonScreen}>
+      <Animated.View entering={FadeIn} style={[styles.shimmer, shimmer]} />
+      <View style={styles.skeletonCopy}>
+        <Text style={styles.skeletonTitle}>Завантажуємо YouTube Shorts</Text>
+        <Text style={styles.skeletonText}>Шукаємо короткі embeddable відео через YouTube Data API.</Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    gap: spacing.xxl,
-    paddingBottom: spacing.huge,
-  },
-  featured: {
-    aspectRatio: 0.78,
-    backgroundColor: colors.tile,
-    borderRadius: radii.lg,
-    maxHeight: 620,
-    minHeight: 420,
-    overflow: 'hidden',
-    position: 'relative',
-    ...shadows.product,
-  },
-  featuredImage: {
-    height: '100%',
-    width: '100%',
-  },
-  featuredShade: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.22)',
-  },
-  featuredTop: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    left: spacing.lg,
-    position: 'absolute',
-    right: spacing.lg,
-    top: spacing.lg,
-  },
-  duration: {
-    ...typography.captionStrong,
-    backgroundColor: 'rgba(0, 0, 0, 0.38)',
-    borderRadius: radii.pill,
-    color: colors.white,
-    overflow: 'hidden',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  featuredBottom: {
-    alignItems: 'flex-end',
-    bottom: spacing.lg,
-    flexDirection: 'row',
-    gap: spacing.md,
-    left: spacing.lg,
-    position: 'absolute',
-    right: spacing.lg,
-  },
-  playButton: {
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: radii.pill,
-    height: 54,
-    justifyContent: 'center',
-    width: 54,
-  },
-  featuredCopy: {
-    flex: 1,
-    gap: spacing.xs,
-    minWidth: 0,
-  },
-  featuredTitle: {
-    color: colors.white,
-    fontSize: 34,
-    fontWeight: '600',
-    lineHeight: 40,
-  },
-  featuredMeta: {
-    ...typography.body,
-    color: colors.bodyMutedOnDark,
-  },
-  feed: {
-    gap: spacing.lg,
-  },
-  grid: {
-    gap: spacing.lg,
-  },
-  gridWide: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  gridItem: {
-    width: '100%',
-  },
-  gridItemWide: {
-    flexBasis: '31%',
-    flexGrow: 1,
-  },
-  card: {
-    minWidth: 0,
-  },
-  thumbnail: {
-    aspectRatio: 0.82,
-    backgroundColor: colors.tileAlt,
-    position: 'relative',
-  },
-  thumbnailImage: {
-    height: '100%',
-    width: '100%',
-  },
-  thumbnailShade: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.14)',
-  },
-  thumbnailPlay: {
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: radii.pill,
-    height: 38,
-    justifyContent: 'center',
-    left: spacing.md,
-    position: 'absolute',
-    top: spacing.md,
-    width: 38,
-  },
-  thumbnailDuration: {
-    ...typography.captionStrong,
-    backgroundColor: 'rgba(0, 0, 0, 0.42)',
-    borderRadius: radii.pill,
-    bottom: spacing.md,
-    color: colors.white,
-    overflow: 'hidden',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    position: 'absolute',
-    right: spacing.md,
-  },
-  cardBody: {
+  footer: {
+    alignSelf: 'center',
     gap: spacing.sm,
+    minHeight: 96,
     padding: spacing.lg,
   },
-  cardTitle: {
-    ...typography.subtitle,
-    color: colors.ink,
-    fontWeight: '600',
-  },
-  cardMeta: {
+  footerText: {
     ...typography.caption,
-    color: colors.inkSubtle,
+    color: questColors.textSecondary,
+    textAlign: 'center',
   },
-  stats: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
+  item: {
+    alignSelf: 'center',
+    backgroundColor: questColors.void,
+    overflow: 'hidden',
+    position: 'relative',
   },
-  stat: {
+  itemShell: {
     alignItems: 'center',
-    backgroundColor: colors.surfacePearl,
-    borderRadius: radii.pill,
-    flexDirection: 'row',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    backgroundColor: questColors.void,
   },
-  statText: {
+  listContent: {
+    backgroundColor: questColors.void,
+  },
+  toastNotice: {
+    backgroundColor: 'rgba(17,17,24,0.94)',
+    borderColor: 'rgba(196,255,0,0.3)',
+    borderRadius: radii.md,
+    borderWidth: 1,
+    gap: spacing.xs,
+    left: spacing.md,
+    padding: spacing.md,
+    position: 'absolute',
+    right: spacing.md,
+    top: spacing.xl + 40, // Below safe area
+    zIndex: 100,
+  },
+  noticeText: {
     ...typography.caption,
-    color: colors.inkMuted,
-    maxWidth: 120,
+    color: questColors.textSecondary,
+  },
+  noticeTitle: {
+    ...typography.label,
+    color: questColors.acid,
+  },
+  screen: {
+    backgroundColor: questColors.void,
+    flex: 1,
+  },
+  shimmer: {
+    backgroundColor: 'rgba(124,58,255,0.24)',
+    borderRadius: 999,
+    height: 260,
+    position: 'absolute',
+    right: -80,
+    top: 80,
+    width: 260,
+  },
+  skeletonCopy: {
+    bottom: 120,
+    gap: spacing.sm,
+    left: spacing.lg,
+    position: 'absolute',
+    right: spacing.lg,
+  },
+  skeletonScreen: {
+    backgroundColor: questColors.void,
+    flex: 1,
+  },
+  skeletonText: {
+    ...typography.body,
+    color: questColors.textSecondary,
+  },
+  skeletonTitle: {
+    ...typography.title,
+    color: questColors.textPrimary,
   },
 });

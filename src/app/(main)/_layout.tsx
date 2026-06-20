@@ -1,29 +1,28 @@
-import { Feather } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { Redirect, Tabs } from 'expo-router';
+import { CheckSquare, House, MapPin, PlayCircle, Plus, UserCircle } from 'phosphor-react-native';
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LoadingState } from '@/components/ui/status';
 import { Screen } from '@/components/ui/screen';
-import { useAppTheme } from '@/components/providers/app-preferences';
+import { questColors } from '@/constants/colors';
+import { radii } from '@/constants/spacing';
 import { getAuthSession, getUserProfile, hasPin } from '@/services/auth-service';
 
-type TabIconName = React.ComponentProps<typeof Feather>['name'];
-
-const TAB_ICONS: Record<string, TabIconName> = {
-  map: 'map',
-  publish: 'send',
-  profile: 'user',
-  quests: 'compass',
-  videos: 'play-circle',
-};
+const TAB_ICONS = {
+  map: MapPin,
+  profile: UserCircle,
+  publish: Plus,
+  quests: House,
+  tasks: CheckSquare,
+  videos: PlayCircle,
+} as const;
 
 export default function MainTabsLayout() {
-  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const theme = useAppTheme();
   const [redirectTo, setRedirectTo] = useState<'/' | '/login' | '/pin-code' | null>(null);
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
 
@@ -79,60 +78,65 @@ export default function MainTabsLayout() {
       }}
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.inkSubtle,
-        tabBarIcon: ({ color, focused }) => (
-          <Feather color={color} name={TAB_ICONS[route.name] ?? 'circle'} size={focused ? 21 : 19} />
-        ),
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '400',
-          letterSpacing: 0,
+        tabBarActiveTintColor: questColors.electric,
+        tabBarBackground: () => <BlurView intensity={38} style={StyleSheet.absoluteFill} tint="dark" />,
+        tabBarInactiveTintColor: questColors.textSecondary,
+        tabBarIcon: ({ color, focused }) => {
+          const Icon = TAB_ICONS[route.name as keyof typeof TAB_ICONS] ?? House;
+          const isFab = route.name === 'publish';
+
+          if (isFab) {
+            return (
+              <View style={styles.fab}>
+                <Icon color={questColors.void} size={30} weight="bold" />
+              </View>
+            );
+          }
+
+          return <Icon color={color} size={focused ? 25 : 22} weight={focused ? 'fill' : 'regular'} />;
         },
-        tabBarStyle: {
-          backgroundColor: theme.colors.surfacePearl,
-          borderTopColor: theme.colors.border,
-          borderTopWidth: 1,
-          height: 58 + Math.max(insets.bottom, 8),
-          paddingBottom: Math.max(insets.bottom, 8),
-          paddingTop: 7,
-        },
+        tabBarLabel: route.name === 'publish' ? '' : undefined,
+        tabBarLabelStyle: styles.label,
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            height: 66 + Math.max(insets.bottom, 8),
+            paddingBottom: Math.max(insets.bottom, 8),
+          },
+        ],
       })}>
-      <Tabs.Screen
-        name="quests"
-        options={{
-          tabBarLabel: t('tabs.quests'),
-          title: t('tabs.quests'),
-        }}
-      />
-      <Tabs.Screen
-        name="videos"
-        options={{
-          tabBarLabel: t('tabs.videos'),
-          title: t('tabs.videos'),
-        }}
-      />
-      <Tabs.Screen
-        name="publish"
-        options={{
-          tabBarLabel: t('tabs.publish'),
-          title: t('tabs.publish'),
-        }}
-      />
-      <Tabs.Screen
-        name="map"
-        options={{
-          tabBarLabel: t('tabs.map'),
-          title: t('tabs.map'),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          tabBarLabel: t('tabs.profile'),
-          title: t('tabs.profile'),
-        }}
-      />
+      <Tabs.Screen name="quests" options={{ title: 'Feed', tabBarLabel: 'Feed' }} />
+      <Tabs.Screen name="videos" options={{ title: 'Shorts', tabBarLabel: 'Shorts' }} />
+      <Tabs.Screen name="publish" options={{ title: 'Create' }} />
+      <Tabs.Screen name="tasks" options={{ title: 'Tasks', tabBarLabel: 'Tasks' }} />
+      <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarLabel: 'Profile' }} />
+      <Tabs.Screen name="map" options={{ href: null }} />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  fab: {
+    alignItems: 'center',
+    backgroundColor: questColors.ember,
+    borderColor: 'rgba(255,255,255,0.18)',
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    height: 58,
+    justifyContent: 'center',
+    transform: [{ translateY: -18 }],
+    width: 58,
+  },
+  label: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0,
+  },
+  tabBar: {
+    backgroundColor: 'rgba(17,17,24,0.86)',
+    borderTopColor: questColors.border,
+    borderTopWidth: 1,
+    paddingTop: 8,
+    position: 'absolute',
+  },
+});

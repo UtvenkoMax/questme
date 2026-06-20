@@ -12,6 +12,9 @@ python-multipart==0.0.17
 # HTTP client (for external API calls)
 httpx==0.28.0
 
+# YouTube Shorts stream extraction
+yt-dlp>=2025.1.0
+
 # ML (lightweight — no torch/tensorflow)
 scikit-learn==1.6.0
 numpy==2.2.0

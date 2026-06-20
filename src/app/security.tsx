@@ -20,7 +20,7 @@ import {
   type UserProfile,
 } from '@/services/auth-service';
 import { INTEREST_OPTIONS, type InterestId, type LanguagePreference, type ThemePreference } from '@/services/preferences-service';
-import { styles } from './security.styles';
+import { styles } from '@/styles/security.styles';
 
 const THEME_OPTIONS: { label: string; value: ThemePreference }[] = [
   { label: 'Система', value: 'system' },

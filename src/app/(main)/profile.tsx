@@ -1,168 +1,50 @@
-import { Feather } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
-import { Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { PencilSimple, SignOut, ShieldCheck } from 'phosphor-react-native';
+import { useEffect, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { authenticateWithBiometrics } from '@/components/auth/biometric-auth';
-import { PIN_LENGTH } from '@/components/auth/pin-code.types';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Metric, PageHeader, SectionHeader } from '@/components/ui/layout';
-import { ProgressRing } from '@/components/ui/progress-ring';
+import { AchievementBadge } from '@/components/profile/AchievementBadge';
+import { AvatarPickerModal } from '@/components/profile/AvatarPickerModal';
+import { StatBlock } from '@/components/profile/StatBlock';
+import { TransactionItem } from '@/components/profile/TransactionItem';
+import { ChaosAvatar, ChaosBadge, ChaosButton, SectionKicker } from '@/components/ui/chaos';
+import { LoadingState } from '@/components/ui/status';
 import { Screen } from '@/components/ui/screen';
-import { LoadingState, Notice } from '@/components/ui/status';
-import { TextField } from '@/components/ui/text-field';
-import {
-  getPinLockedUntil,
-  getUserProfile,
-  hasProfileErrors,
-  isBiometricEnabled,
-  normalizeEmail,
-  updateUserProfile,
-  validateProfile,
-  verifyPin,
-  type UserProfile,
-} from '@/services/auth-service';
-import { getAchievements } from '@/services/achievement-service';
-import { getQuestProgress, getQuests, type Quest } from '@/services/quest-service';
-import { colors } from '@/theme';
-import { styles } from './profile.styles';
+import { getAvatarPhotoIdForAccount, getAvatarPhotoSource } from '@/constants/avatarPhotos';
+import { questColors } from '@/constants/colors';
+import { radii, spacing } from '@/constants/spacing';
+import { typography } from '@/constants/typography';
+import { useProfileDashboard } from '@/hooks/useProfile';
+import { getUserProfile, logout, type UserProfile } from '@/services/auth-service';
+import { useWalletStore, selectFormattedBalance, selectTransactions } from '@/store';
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat('uk-UA', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date(value));
-}
+type ProfileTab = 'activity' | 'achievements' | 'wallet';
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const dashboard = useProfileDashboard();
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [quests, setQuests] = useState<Quest[]>([]);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [confirmationPin, setConfirmationPin] = useState('');
-  const [biometricEnabled, setBiometricEnabled] = useState(false);
-  const [isProfileChangeVerified, setIsProfileChangeVerified] = useState(false);
-  const [message, setMessage] = useState<{ text: string; tone: 'success' | 'danger' | 'neutral' } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<ProfileTab>('activity');
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  useFocusEffect(
-    useCallback(() => {
-      let isMounted = true;
-
-      async function loadProfile() {
-        setIsLoading(true);
-        const [storedProfile, storedQuests, storedBiometricEnabled] = await Promise.all([
-          getUserProfile(),
-          getQuests(),
-          isBiometricEnabled(),
-        ]);
-        if (!isMounted) return;
-
-        if (!storedProfile) {
-          router.replace('/');
-          return;
-        }
-
-        setProfile(storedProfile);
-        setName(storedProfile.name);
-        setEmail(storedProfile.email);
-        setBiometricEnabled(storedBiometricEnabled);
-        setConfirmationPin('');
-        setIsProfileChangeVerified(false);
-        setQuests(storedQuests);
-        setIsLoading(false);
+  useEffect(() => {
+    let mounted = true;
+    getUserProfile().then((storedProfile) => {
+      if (!mounted) return;
+      if (!storedProfile) {
+        router.replace('/');
+        return;
       }
+      setProfile(storedProfile);
+      setLoading(false);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
 
-      loadProfile();
-      return () => {
-        isMounted = false;
-      };
-    }, [router])
-  );
-
-  const errors = useMemo(() => validateProfile({ email, name }), [email, name]);
-  const progress = useMemo(() => getQuestProgress(quests), [quests]);
-  const achievements = useMemo(() => getAchievements(quests), [quests]);
-  const completedQuests = quests.filter((quest) => quest.completed);
-  const unlockedAchievements = achievements.filter((achievement) => achievement.unlocked);
-  const initials = (profile?.name ?? 'Q')
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-  const hasProfileChanges = useMemo(() => {
-    if (!profile) return false;
-    return name.trim() !== profile.name || normalizeEmail(email) !== profile.email;
-  }, [email, name, profile]);
-  const canSave =
-    !hasProfileErrors(errors) &&
-    !isSaving &&
-    (!hasProfileChanges || isProfileChangeVerified || confirmationPin.length === PIN_LENGTH);
-
-  const verifyProfileChangeWithBiometrics = async () => {
-    setIsSaving(true);
-    setMessage(null);
-
-    try {
-      const result = await authenticateWithBiometrics({
-        promptMessage: 'Підтвердьте зміну профілю',
-      });
-
-      setIsProfileChangeVerified(result.success);
-      setMessage({ text: result.message, tone: result.success ? 'success' : 'danger' });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const saveProfile = async () => {
-    if (!canSave) return;
-
-    setIsSaving(true);
-    setMessage(null);
-
-    try {
-      if (hasProfileChanges && !isProfileChangeVerified) {
-        const isPinValid = await verifyPin(confirmationPin);
-        if (!isPinValid) {
-          const lockedUntil = await getPinLockedUntil();
-          setMessage({
-            text: lockedUntil
-              ? `Забагато невдалих спроб. Повторіть після ${lockedUntil.toLocaleTimeString('uk-UA', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}.`
-              : 'PIN не підтверджено. Перевірте код і спробуйте ще раз.',
-            tone: 'danger',
-          });
-          setConfirmationPin('');
-          return;
-        }
-
-        setIsProfileChangeVerified(true);
-      }
-
-      const nextProfile = await updateUserProfile({ email, name });
-      setProfile(nextProfile);
-      setConfirmationPin('');
-      setIsProfileChangeVerified(false);
-      setMessage({ text: 'Профіль оновлено.', tone: 'success' });
-    } catch (error) {
-      setMessage({
-        text: error instanceof Error ? error.message : 'Не вдалося оновити профіль.',
-        tone: 'danger',
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  if (isLoading) {
+  if (loading) {
     return (
       <Screen scroll={false}>
         <LoadingState text="Завантажуємо профіль..." />
@@ -170,163 +52,262 @@ export default function ProfileScreen() {
     );
   }
 
+  const initials = (profile?.name ?? 'QM')
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2);
+  const avatarSource =
+    profile?.avatarKind === 'custom' && profile.avatarUri
+      ? { uri: profile.avatarUri }
+      : getAvatarPhotoSource(profile?.avatarId) ??
+        getAvatarPhotoSource(getAvatarPhotoIdForAccount(profile?.email ?? profile?.id ?? initials));
+  const avatarEmoji = profile?.avatarKind === 'emoji' ? profile.avatarEmoji : undefined;
+
+  const signOut = async () => {
+    await logout();
+    router.replace('/login');
+  };
+
   return (
     <Screen contentStyle={styles.content}>
-      <PageHeader
-        action={
-          <View style={styles.headerActions}>
-            <Button fullWidth={false} icon="award" onPress={() => router.push('/achievements' as never)} size="sm" title="Бейджі" variant="secondary" />
-            <Button fullWidth={false} icon="shield" onPress={() => router.push('/security')} size="sm" title="Безпека" variant="ghost" />
-          </View>
-        }
-        eyebrow="Профіль"
-        subtitle={profile ? `Створено ${formatDate(profile.createdAt)}` : 'Ваш локальний профіль QuestMe.'}
-        title={profile?.name ?? 'QuestMe'}
-      />
-
-      <Card style={styles.profileHero}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initials}</Text>
-        </View>
-        <View style={styles.profileHeroCopy}>
-          <Text style={styles.profileName}>{profile?.name ?? 'QuestMe'}</Text>
-          <Text style={styles.profileMeta}>Level {progress.level} · {progress.totalPoints} XP</Text>
-          <View style={styles.levelTrack}>
-            <View style={[styles.levelFill, { width: `${progress.levelProgressPercent}%` }]} />
+      <View style={styles.headerCard}>
+        <View style={styles.headerTop}>
+          <ChaosAvatar emoji={avatarEmoji} label={initials} size={86} source={avatarEmoji ? undefined : avatarSource} />
+          <View style={styles.headerCopy}>
+            <Text style={styles.name}>{profile?.name ?? 'QuestMe'}</Text>
+            <Text style={styles.level}>{dashboard.stats.level} «{dashboard.stats.title}»</Text>
+            <ChaosBadge tone="acid">streak 7 днів</ChaosBadge>
           </View>
         </View>
-        <ProgressRing label="рівень" percent={progress.levelProgressPercent} size={92} value={`${progress.level}`} />
-      </Card>
-
-      <View style={styles.metrics}>
-        <Metric label="Виконано" value={`${progress.completedCount}/${progress.totalCount}`} />
-        <Metric label="Балів" value={progress.totalPoints} />
-        <Metric label="Прогрес" value={`${progress.completionPercent}%`} />
+        <ChaosButton
+          icon={<PencilSimple color={questColors.textPrimary} size={18} weight="bold" />}
+          label="Змінити аватар"
+          onPress={() => setAvatarPickerOpen(true)}
+          variant="outline"
+        />
+        <View style={styles.stats}>
+          <StatBlock label="виконано" value={dashboard.stats.completed} />
+          <StatBlock label="створено" value={dashboard.stats.created} />
+          <StatBlock label="зароблено" value={dashboard.stats.earned} />
+        </View>
+        <View style={styles.actions}>
+          <ChaosButton
+            icon={<ShieldCheck color={questColors.void} size={18} weight="bold" />}
+            label="Безпека"
+            onPress={() => router.push('/security')}
+            style={styles.action}
+            variant="electric"
+          />
+          <ChaosButton
+            icon={<SignOut color={questColors.textPrimary} size={18} />}
+            label="Вийти"
+            onPress={signOut}
+            style={styles.action}
+            variant="outline"
+          />
+        </View>
       </View>
 
-      <Card style={styles.card}>
-        <SectionHeader
-          action={<Button fullWidth={false} icon="arrow-right" onPress={() => router.push('/achievements' as never)} size="sm" title="Усі" variant="ghost" />}
-          subtitle={`${unlockedAchievements.length}/${achievements.length} відкрито`}
-          title="Досягнення"
-        />
-        <View style={styles.badgeGrid}>
-          {achievements.slice(0, 4).map((achievement) => (
-            <View key={achievement.id} style={[styles.badgeCard, !achievement.unlocked && styles.badgeCardLocked]}>
-              <View style={[styles.badgeIcon, achievement.unlocked && styles.badgeIconUnlocked]}>
-                <Feather color={achievement.unlocked ? '#FFFFFF' : '#7A7A7A'} name={achievement.icon} size={18} />
-              </View>
-              <Text numberOfLines={1} style={styles.badgeTitle}>{achievement.title}</Text>
-              <Text numberOfLines={2} style={styles.badgeText}>
-                {achievement.unlocked ? 'Відкрито' : 'Закрито'}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </Card>
+      <View style={styles.tabs}>
+        <TabButton active={activeTab === 'activity'} label="Активність" onPress={() => setActiveTab('activity')} />
+        <TabButton active={activeTab === 'achievements'} label="Досягнення" onPress={() => setActiveTab('achievements')} />
+        <TabButton active={activeTab === 'wallet'} label="Гаманець" onPress={() => setActiveTab('wallet')} />
+      </View>
 
-      <Card style={styles.card}>
-        <SectionHeader
-          subtitle="Останні персональні місії, які ви завершили"
-          title="Історія квестів"
-        />
-        {completedQuests.length ? (
-          <View style={styles.historyList}>
-            {completedQuests.slice(0, 4).map((quest) => (
-              <View key={quest.id} style={styles.historyRow}>
-                <View style={styles.historyIcon}>
-                  <Feather color={colors.success} name="check" size={16} />
-                </View>
-                <View style={styles.historyCopy}>
-                  <Text style={styles.historyTitle}>{quest.title}</Text>
-                  <Text style={styles.historyText}>+{quest.points} XP · {quest.completedAt ? formatDate(quest.completedAt) : 'сьогодні'}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        ) : (
-          <Notice tone="neutral">Завершіть перший квест, і тут зʼявиться історія активності.</Notice>
-        )}
-      </Card>
-
-      <Card style={styles.card}>
-        <SectionHeader
-          subtitle="Ці дані використовуються локально та для майбутньої синхронізації з акаунтом."
-          title="Особисті дані"
-        />
-        <TextField
-          autoCapitalize="words"
-          autoComplete="name"
-          error={errors.name}
-          label="Імʼя"
-          onChangeText={setName}
-          placeholder="Ваше імʼя"
-          textContentType="name"
-          value={name}
-        />
-        <TextField
-          autoCapitalize="none"
-          autoComplete="email"
-          error={errors.email}
-          inputMode="email"
-          keyboardType="email-address"
-          label="Email"
-          onChangeText={setEmail}
-          placeholder="you@example.com"
-          textContentType="emailAddress"
-          value={email}
-        />
-        {hasProfileChanges && !isProfileChangeVerified ? (
-          <View style={styles.reauthBox}>
-            <Text style={styles.reauthText}>
-              Щоб змінити email або імʼя профілю, підтвердьте дію PIN-кодом або біометрією.
-            </Text>
-            <TextField
-              inputMode="numeric"
-              keyboardType="number-pad"
-              label="PIN для підтвердження"
-              maxLength={PIN_LENGTH}
-              onChangeText={setConfirmationPin}
-              placeholder="••••"
-              secureTextEntry
-              value={confirmationPin}
-            />
-            {biometricEnabled ? (
-              <Button
-                disabled={isSaving}
-                icon="shield"
-                onPress={verifyProfileChangeWithBiometrics}
-                title="Підтвердити біометрією"
-                variant="secondary"
-              />
-            ) : null}
-          </View>
-        ) : null}
-        {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
-        <Button disabled={!canSave} icon="save" loading={isSaving} onPress={saveProfile} title="Зберегти зміни" />
-      </Card>
-
-      <Card style={styles.card}>
-        <SectionHeader title="Акаунт" />
-        <InfoRow label="Авторизація" value={profile?.authProvider === 'backend' ? 'Backend API' : 'Локальний режим'} />
-        <InfoRow label="Email" value={profile?.email ?? '-'} />
-      </Card>
+      {activeTab === 'activity' ? <ActivityTab /> : null}
+      {activeTab === 'achievements' ? <AchievementsTab /> : null}
+      {activeTab === 'wallet' ? <WalletTab /> : null}
+      <AvatarPickerModal
+        onClose={() => setAvatarPickerOpen(false)}
+        onProfileChange={setProfile}
+        profile={profile}
+        visible={avatarPickerOpen}
+      />
     </Screen>
   );
 }
 
-type InfoRowProps = {
-  label: string;
-  value: string;
-};
-
-function InfoRow({ label, value }: InfoRowProps) {
+function TabButton({ active, label, onPress }: { active: boolean; label: string; onPress: () => void }) {
   return (
-    <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text numberOfLines={1} style={styles.infoValue}>
-        {value}
-      </Text>
+    <Pressable accessibilityRole="button" onPress={onPress} style={[styles.tab, active && styles.tabActive]}>
+      <Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function ActivityTab() {
+  const dashboard = useProfileDashboard();
+  return (
+    <View style={styles.panel}>
+      <SectionKicker eyebrow="Live feed" title="Остання активність" />
+      {dashboard.leaderboard.map((item) => (
+        <View key={item.id} style={styles.activityRow}>
+          <ChaosAvatar
+            label={item.name.slice(0, 2)}
+            size={42}
+            source={getAvatarPhotoSource(getAvatarPhotoIdForAccount(`${item.id}:${item.name}`))}
+          />
+          <View style={styles.activityCopy}>
+            <Text style={styles.activityTitle}>#{item.rank} {item.name}</Text>
+            <Text style={styles.activityText}>заробив {item.earned} цього тижня</Text>
+          </View>
+          <ChaosBadge tone={item.rank <= 3 ? 'acid' : 'muted'}>top</ChaosBadge>
+        </View>
+      ))}
     </View>
   );
 }
+
+function AchievementsTab() {
+  const dashboard = useProfileDashboard();
+  return (
+    <View style={styles.panel}>
+      <SectionKicker eyebrow="Badges" title="Досягнення" />
+      <View style={styles.badgeGrid}>
+        {dashboard.achievements.map((achievement) => (
+          <AchievementBadge key={achievement.id} achievement={achievement} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function WalletTab() {
+  const router = useRouter();
+  const formattedBalance = useWalletStore(selectFormattedBalance);
+  const transactions = useWalletStore(selectTransactions);
+  return (
+    <View style={styles.panel}>
+      <View style={styles.walletHero}>
+        <Text style={styles.walletLabel}>Баланс</Text>
+        <Text style={styles.walletValue}>{formattedBalance}</Text>
+        <View style={styles.actions}>
+          <ChaosButton label="Поповнити" onPress={() => router.push('/wallet-topup')} style={styles.action} variant="ember" />
+          <ChaosButton label="Вивести" onPress={() => router.push('/wallet-withdraw')} style={styles.action} variant="outline" />
+        </View>
+      </View>
+      <SectionKicker eyebrow="Transactions" title="Історія" />
+      {transactions.map((transaction) => (
+        <TransactionItem key={transaction.id} amount={transaction.amount} status={transaction.status} title={transaction.title} />
+      ))}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  action: {
+    flex: 1,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  activityCopy: {
+    flex: 1,
+    gap: spacing.xxs,
+    minWidth: 0,
+  },
+  activityRow: {
+    alignItems: 'center',
+    backgroundColor: questColors.surfaceUp,
+    borderColor: questColors.border,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  activityText: {
+    ...typography.caption,
+    color: questColors.textSecondary,
+  },
+  activityTitle: {
+    ...typography.label,
+    color: questColors.textPrimary,
+  },
+  badgeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  content: {
+    gap: spacing.lg,
+    paddingBottom: 120,
+  },
+  headerCard: {
+    backgroundColor: questColors.surface,
+    borderColor: questColors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    gap: spacing.lg,
+    padding: spacing.lg,
+  },
+  headerCopy: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  headerTop: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  level: {
+    ...typography.body,
+    color: questColors.textSecondary,
+  },
+  name: {
+    ...typography.title,
+    color: questColors.textPrimary,
+  },
+  panel: {
+    gap: spacing.md,
+  },
+  stats: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  tab: {
+    alignItems: 'center',
+    borderBottomColor: 'transparent',
+    borderBottomWidth: 2,
+    flex: 1,
+    paddingVertical: spacing.sm,
+  },
+  tabActive: {
+    borderBottomColor: questColors.acid,
+  },
+  tabText: {
+    ...typography.label,
+    color: questColors.textSecondary,
+  },
+  tabTextActive: {
+    color: questColors.textPrimary,
+  },
+  tabs: {
+    backgroundColor: questColors.surface,
+    borderColor: questColors.border,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    flexDirection: 'row',
+    paddingHorizontal: spacing.xs,
+  },
+  walletHero: {
+    backgroundColor: 'rgba(124,58,255,0.16)',
+    borderColor: questColors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
+  walletLabel: {
+    ...typography.label,
+    color: questColors.acid,
+    textTransform: 'uppercase',
+  },
+  walletValue: {
+    ...typography.display,
+    color: questColors.textPrimary,
+  },
+});
