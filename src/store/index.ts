@@ -27,5 +27,17 @@ export {
 } from './map-store';
 export type { MapStore } from './map-store';
 
-export { useWalletStore, selectBalance, selectFormattedBalance, selectTransactions } from './wallet-store';
-export type { WalletStore } from './wallet-store';
+export {
+  PREMIUM_QUEST_PRICE,
+  PLATFORM_COMMISSION_RATE,
+  calculatePlatformFee,
+  selectActiveEscrows,
+  selectBalance,
+  selectEscrowBalance,
+  selectFormattedBalance,
+  selectFormattedEscrowBalance,
+  selectTransactions,
+  selectWalletSummary,
+  useWalletStore,
+} from './wallet-store';
+export type { TransactionType, WalletEscrow, WalletStore, WalletTransaction } from './wallet-store';

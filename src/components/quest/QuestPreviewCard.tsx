@@ -11,10 +11,20 @@ type QuestPreviewCardProps = {
   proofType: string;
   reward: number;
   deadline: string;
+  disabled?: boolean;
   onPublish?: () => void;
+  publishLabel?: string;
 };
 
-export function QuestPreviewCard({ deadline, onPublish, proofType, reward, title }: QuestPreviewCardProps) {
+export function QuestPreviewCard({
+  deadline,
+  disabled = false,
+  onPublish,
+  proofType,
+  publishLabel = 'Опублікувати',
+  reward,
+  title,
+}: QuestPreviewCardProps) {
   return (
     <View style={styles.card}>
       <View style={styles.top}>
@@ -32,7 +42,7 @@ export function QuestPreviewCard({ deadline, onPublish, proofType, reward, title
           <Text style={styles.metaText}>{deadline}</Text>
         </View>
       </View>
-      {onPublish ? <ChaosButton label="Опублікувати" onPress={onPublish} /> : null}
+      {onPublish ? <ChaosButton disabled={disabled} label={publishLabel} onPress={onPublish} /> : null}
     </View>
   );
 }

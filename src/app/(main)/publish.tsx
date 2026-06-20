@@ -24,6 +24,13 @@ import {
     getQuestTextWordCount,
     limitQuestTextWords,
 } from "@/services/quest-service";
+import {
+    PREMIUM_QUEST_PRICE,
+    calculatePlatformFee,
+    selectBalance,
+    selectFormattedBalance,
+    useWalletStore,
+} from "@/store";
 
 const examples = [
   "Зніми відео, як ти 30 секунд говориш голосом NPC",
@@ -42,7 +49,11 @@ export default function CreateQuestScreen() {
   const [proofType, setProofType] = useState("Відео");
   const [reward, setReward] = useState(50);
   const [deadline, setDeadline] = useState("24 год");
+  const [isPremium, setIsPremium] = useState(false);
   const [message, setMessage] = useState("");
+  const walletBalance = useWalletStore(selectBalance);
+  const formattedBalance = useWalletStore(selectFormattedBalance);
+  const reserveQuestReward = useWalletStore((state) => state.reserveQuestReward);
 
   const placeholder = useMemo(
     () => examples[Math.floor(Math.random() * examples.length)],
@@ -50,6 +61,10 @@ export default function CreateQuestScreen() {
   );
   const taskWordCount = useMemo(() => getQuestTextWordCount(task), [task]);
   const canContinue = step === 0 ? task.trim().length >= 10 : true;
+  const platformFee = calculatePlatformFee(reward);
+  const premiumFee = isPremium ? PREMIUM_QUEST_PRICE : 0;
+  const totalToReserve = reward + platformFee + premiumFee;
+  const canAffordQuest = walletBalance >= totalToReserve;
 
   const updateTask = (value: string) => {
     const limitedTask = limitQuestTextWords(value);
@@ -82,14 +97,23 @@ export default function CreateQuestScreen() {
   };
 
   const publish = async () => {
+    const reserveResult = reserveQuestReward(task.trim(), reward, {
+      premium: isPremium,
+    });
+
+    if (!reserveResult.ok) {
+      setMessage(reserveResult.message);
+      return;
+    }
+
     await createQuest(
       task.trim(),
-      `${proofType} · ${reward} грн · ${deadline}`,
+      `${proofType} · ${reward} грн · ${deadline} · escrow ${reserveResult.escrowId}${isPremium ? " · premium" : ""}`,
     );
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
       () => {},
     );
-    setMessage("Квест опубліковано. Він зʼявиться у трекері.");
+    setMessage("Квест опубліковано. Винагорода заблокована в escrow до підтвердження виконання.");
     setTimeout(() => router.push("/tasks" as never), 480);
   };
 
@@ -159,6 +183,22 @@ export default function CreateQuestScreen() {
                 />
               ))}
             </View>
+            <Pressable
+              accessibilityRole="switch"
+              accessibilityState={{ checked: isPremium }}
+              onPress={() => setIsPremium((value) => !value)}
+              style={[styles.premiumCard, isPremium && styles.premiumCardActive]}
+            >
+              <View style={styles.premiumCopy}>
+                <Text style={styles.premiumTitle}>Premium-квест</Text>
+                <Text style={styles.premiumText}>
+                  Бейдж у стрічці, пріоритет у видачі та окрема транзакція.
+                </Text>
+              </View>
+              <ChaosBadge tone={isPremium ? "acid" : "muted"}>
+                {isPremium ? "увімкнено" : `+${PREMIUM_QUEST_PRICE} грн`}
+              </ChaosBadge>
+            </Pressable>
           </View>
         ) : null}
 
@@ -183,16 +223,31 @@ export default function CreateQuestScreen() {
             <Text style={styles.stepTitle}>Перевірка</Text>
             <QuestPreviewCard
               deadline={deadline}
+              disabled={!canAffordQuest}
               proofType={proofType}
+              publishLabel={canAffordQuest ? "Опублікувати" : "Недостатньо коштів"}
               reward={reward}
               title={task}
               onPublish={publish}
             />
+            <View style={styles.paymentSummary}>
+              <Text style={styles.summaryTitle}>Safe Pay розрахунок</Text>
+              <SummaryRow label="Доступно" value={formattedBalance} />
+              <SummaryRow label="Винагорода в escrow" value={`${reward} грн`} />
+              <SummaryRow label="Комісія платформи 8%" value={`${platformFee} грн`} tone="ember" />
+              <SummaryRow label="Premium-квест" value={premiumFee ? `${premiumFee} грн` : "0 грн"} />
+              <View style={styles.summaryDivider} />
+              <SummaryRow label="Буде списано" value={`${totalToReserve} грн`} tone="acid" strong />
+              {!canAffordQuest ? (
+                <Text style={styles.summaryError}>
+                  Поповніть гаманець ще на {totalToReserve - walletBalance} грн або зменште винагороду.
+                </Text>
+              ) : null}
+            </View>
             <View style={styles.paymentNote}>
-              <ChaosBadge tone="ember">LiqPay / Monobank ready</ChaosBadge>
+              <ChaosBadge tone="ember">Escrow + commission</ChaosBadge>
               <Text style={styles.noteText}>
-                Інтерфейс платежу підготовлено як draft, API ключі підключаються
-                окремо.
+                Після публікації винагорода блокується, premium і комісія списуються одразу.
               </Text>
             </View>
           </View>
@@ -217,6 +272,33 @@ export default function CreateQuestScreen() {
         ) : null}
       </View>
     </Screen>
+  );
+}
+
+function SummaryRow({
+  label,
+  strong = false,
+  tone,
+  value,
+}: {
+  label: string;
+  strong?: boolean;
+  tone?: "acid" | "ember";
+  value: string;
+}) {
+  return (
+    <View style={styles.summaryRow}>
+      <Text style={[styles.summaryLabel, strong && styles.summaryLabelStrong]}>{label}</Text>
+      <Text
+        style={[
+          styles.summaryValue,
+          strong && styles.summaryValueStrong,
+          tone === "acid" ? styles.summaryValueAcid : tone === "ember" ? styles.summaryValueEmber : null,
+        ]}
+      >
+        {value}
+      </Text>
+    </View>
   );
 }
 
@@ -392,6 +474,43 @@ const styles = StyleSheet.create({
   paymentNote: {
     gap: spacing.sm,
   },
+  paymentSummary: {
+    backgroundColor: questColors.surfaceUp,
+    borderColor: questColors.border,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  premiumCard: {
+    alignItems: "center",
+    backgroundColor: questColors.surfaceUp,
+    borderColor: questColors.border,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md,
+    justifyContent: "space-between",
+    padding: spacing.md,
+  },
+  premiumCardActive: {
+    backgroundColor: "rgba(196,255,0,0.10)",
+    borderColor: "rgba(196,255,0,0.44)",
+  },
+  premiumCopy: {
+    flex: 1,
+    gap: spacing.xxs,
+    minWidth: 180,
+  },
+  premiumText: {
+    ...typography.caption,
+    color: questColors.textSecondary,
+  },
+  premiumTitle: {
+    ...typography.captionStrong,
+    color: questColors.textPrimary,
+  },
   pressed: {
     opacity: 0.72,
   },
@@ -446,6 +565,46 @@ const styles = StyleSheet.create({
   stepTitle: {
     ...typography.titleCompact,
     color: questColors.textPrimary,
+  },
+  summaryDivider: {
+    backgroundColor: questColors.border,
+    height: 1,
+  },
+  summaryError: {
+    ...typography.captionStrong,
+    color: questColors.danger,
+  },
+  summaryLabel: {
+    ...typography.caption,
+    color: questColors.textSecondary,
+  },
+  summaryLabelStrong: {
+    color: questColors.textPrimary,
+  },
+  summaryRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "space-between",
+  },
+  summaryTitle: {
+    ...typography.label,
+    color: questColors.acid,
+    textTransform: "uppercase",
+  },
+  summaryValue: {
+    ...typography.captionStrong,
+    color: questColors.textPrimary,
+    textAlign: "right",
+  },
+  summaryValueAcid: {
+    color: questColors.acid,
+  },
+  summaryValueEmber: {
+    color: questColors.ember,
+  },
+  summaryValueStrong: {
+    ...typography.subtitle,
   },
   textarea: {
     ...typography.subtitle,
