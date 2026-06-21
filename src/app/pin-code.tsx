@@ -1,83 +1,163 @@
-import * as LocalAuthentication from 'expo-local-authentication';
-import * as SecureStore from 'expo-secure-store';
-import { useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { BIOMETRIC_ENABLED_KEY, FACE_ID_ENABLED_KEY, getBiometricName, getExpoGoFaceIdMessage, getFaceIdSetupMessage, isExpoGoOnIos, isIphone, supportsFaceId } from '@/components/auth/biometric-auth';
+import { authenticateWithBiometrics } from '@/components/auth/biometric-auth';
 import { PinCodeScreenView } from '@/components/auth/pin-code-screen-view';
 import { PIN_LENGTH, type PinCodeStep } from '@/components/auth/pin-code.types';
+import { LoadingState } from '@/components/ui/status';
+import { Screen } from '@/components/ui/screen';
+import {
+  clearPendingRegistration,
+  getAuthSession,
+  getPinLockedUntil,
+  getUserProfile,
+  hasPin,
+  savePin,
+  setBiometricEnabled,
+  verifyPin,
+} from '@/services/auth-service';
+
+type PinMode = 'create' | 'change' | 'reset';
+
+function getPinMode(mode: string | string[] | undefined): PinMode {
+  const value = Array.isArray(mode) ? mode[0] : mode;
+  if (value === 'change' || value === 'reset') return value;
+  return 'create';
+}
+
+function getInitialMessage(mode: PinMode) {
+  if (mode === 'change') return 'Введіть поточний PIN-код.';
+  if (mode === 'reset') return 'Створіть новий PIN-код для входу.';
+  return 'Створіть PIN-код для швидкого входу.';
+}
+
+function formatLockTime(date: Date) {
+  return new Intl.DateTimeFormat('uk-UA', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
 
 export default function PinCodeScreen() {
   const router = useRouter();
-  const [step, setStep] = useState<PinCodeStep>('create');
+  const { mode } = useLocalSearchParams<{ mode?: string | string[] }>();
+  const pinMode = getPinMode(mode);
+  const [step, setStep] = useState<PinCodeStep>(() => (pinMode === 'change' ? 'verify' : 'create'));
   const [pin, setPin] = useState('');
   const [firstPin, setFirstPin] = useState('');
-  const [message, setMessage] = useState('Create a passcode');
+  const [message, setMessage] = useState(() => getInitialMessage(pinMode));
   const [isBusy, setIsBusy] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
-  const title = useMemo(
-    () => (step === 'biometric' ? 'Безпечний вхід' : step === 'done' ? 'Готово' : 'Enter Passcode'),
-    [step]
-  );
+  useEffect(() => {
+    let isMounted = true;
+
+    async function validatePinAccess() {
+      setIsReady(false);
+
+      const [profile, session, pinExists] = await Promise.all([
+        getUserProfile(),
+        getAuthSession(),
+        hasPin(),
+      ]);
+
+      if (!isMounted) return;
+
+      if (!profile) {
+        router.replace('/');
+        return;
+      }
+
+      if (pinMode === 'create' && pinExists) {
+        router.replace(session ? '/security' : '/login');
+        return;
+      }
+
+      if (pinMode === 'reset' && !session) {
+        router.replace('/login');
+        return;
+      }
+
+      if (pinMode === 'change' && !pinExists) {
+        router.replace('/pin-code');
+        return;
+      }
+
+      setIsReady(true);
+    }
+
+    validatePinAccess();
+    return () => {
+      isMounted = false;
+    };
+  }, [pinMode, router]);
+
+  const title = useMemo(() => {
+    if (step === 'biometric') return 'Безпечний вхід';
+    if (step === 'done') return 'Готово';
+    if (step === 'verify') return 'Зміна PIN';
+    if (pinMode === 'reset') return 'Скидання PIN';
+    return 'PIN-код';
+  }, [pinMode, step]);
 
   const requestBiometric = useCallback(async () => {
     setIsBusy(true);
     setMessage('Підтвердьте біометричну автентифікацію у системному вікні.');
 
     try {
-      const hasHardware = await LocalAuthentication.hasHardwareAsync();
-      const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
-      const biometricName = getBiometricName(supportedTypes);
-
-      if (!hasHardware) {
-        setMessage('Цей пристрій не підтримує біометричну автентифікацію.');
-        return;
-      }
-
-      if (isExpoGoOnIos() && supportsFaceId(supportedTypes)) {
-        setMessage(getExpoGoFaceIdMessage());
-        return;
-      }
-
-      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-      if (!isEnrolled) {
-        setMessage(isIphone() ? getFaceIdSetupMessage() : `Налаштуйте ${biometricName} у системі.`);
-        return;
-      }
-
-      const result = await LocalAuthentication.authenticateAsync({
-        biometricsSecurityLevel: 'strong',
-        cancelLabel: 'Скасувати',
-        disableDeviceFallback: true,
-        fallbackLabel: '',
-        promptDescription: `QuestMe використовує ${biometricName} лише для підтвердження входу.`,
-        promptMessage: `Підтвердьте вхід через ${biometricName}`,
-        promptSubtitle: 'Безпечний вхід у QuestMe',
-      });
+      const result = await authenticateWithBiometrics();
 
       if (result.success) {
-        const writes = [SecureStore.setItemAsync(BIOMETRIC_ENABLED_KEY, 'true')];
-        if (isIphone() && supportsFaceId(supportedTypes)) writes.push(SecureStore.setItemAsync(FACE_ID_ENABLED_KEY, 'true'));
-        await Promise.all(writes);
+        await setBiometricEnabled(true);
         setStep('done');
-        setMessage(`${biometricName} увімкнено для входу в QuestMe.`);
+        setMessage(`${result.biometricName} увімкнено для входу в QuestMe.`);
         return;
       }
 
-      await SecureStore.setItemAsync(BIOMETRIC_ENABLED_KEY, 'false');
-      setMessage(`${biometricName} не підтверджено. Спробуйте ще раз.`);
+      await setBiometricEnabled(false);
+      setMessage(result.message);
     } finally {
       setIsBusy(false);
     }
   }, []);
 
+  const skipBiometric = useCallback(async () => {
+    await setBiometricEnabled(false);
+    setStep('done');
+    setMessage('PIN-код збережено. Біометричний вхід можна увімкнути пізніше в налаштуваннях безпеки.');
+  }, []);
+
   const completePin = useCallback(
     async (nextPin: string) => {
+      if (step === 'verify') {
+        setIsBusy(true);
+        try {
+          const isValid = await verifyPin(nextPin);
+          setPin('');
+
+          if (!isValid) {
+            const lockedUntil = await getPinLockedUntil();
+            setMessage(
+              lockedUntil
+                ? `Забагато спроб. Спробуйте після ${formatLockTime(lockedUntil)}.`
+                : 'PIN-код не збігається. Спробуйте ще раз.'
+            );
+            return;
+          }
+
+          setStep('create');
+          setMessage('Введіть новий PIN-код.');
+          return;
+        } finally {
+          setIsBusy(false);
+        }
+      }
+
       if (step === 'create') {
         setFirstPin(nextPin);
         setPin('');
         setStep('confirm');
-        setMessage('Confirm your passcode');
+        setMessage('Повторіть PIN-код для підтвердження.');
         return;
       }
 
@@ -85,24 +165,30 @@ export default function PinCodeScreen() {
         setFirstPin('');
         setPin('');
         setStep('create');
-        setMessage('Passcodes did not match. Try again.');
+        setMessage('PIN-коди не збігаються. Спробуйте ще раз.');
         return;
       }
 
       setIsBusy(true);
       try {
-        await SecureStore.setItemAsync('questme.pin', nextPin, {
-          keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-        });
+        await savePin(nextPin);
+        await clearPendingRegistration();
         setPin('');
-        setStep('biometric');
-        setMessage('PIN-код збережено. Налаштуйте біометричний вхід для швидкої авторизації.');
-        setTimeout(requestBiometric, 260);
+
+        if (pinMode === 'create') {
+          setStep('biometric');
+          setMessage('PIN-код збережено. Налаштуйте біометричний вхід для швидкої авторизації.');
+          setTimeout(requestBiometric, 260);
+          return;
+        }
+
+        setStep('done');
+        setMessage(pinMode === 'reset' ? 'PIN-код скинуто. Тепер увійдіть з новим PIN.' : 'PIN-код оновлено.');
       } finally {
         setIsBusy(false);
       }
     },
-    [firstPin, requestBiometric, step]
+    [firstPin, pinMode, requestBiometric, step]
   );
 
   const pressDigit = useCallback(
@@ -127,14 +213,39 @@ export default function PinCodeScreen() {
     router.back();
   }, [pin.length, router]);
 
+  const finish = useCallback(() => {
+    if (pinMode === 'create') {
+      router.replace('/quests' as never);
+      return;
+    }
+
+    if (pinMode === 'reset') {
+      router.replace('/login');
+      return;
+    }
+
+    router.replace('/security');
+  }, [pinMode, router]);
+
+  if (!isReady) {
+    return (
+      <Screen scroll={false}>
+        <LoadingState text="Перевіряємо доступ..." />
+      </Screen>
+    );
+  }
+
   return (
     <PinCodeScreenView
+      biometricRetryLabel="Спробувати ще раз"
+      cancelLabel={pin.length > 0 ? 'Очистити' : 'Назад'}
       isBusy={isBusy}
       message={message}
       onCancel={cancelPin}
-      onFinish={() => router.replace('/')}
+      onFinish={finish}
       onPressDigit={pressDigit}
       onRetryBiometric={requestBiometric}
+      onSkipBiometric={pinMode === 'create' ? skipBiometric : undefined}
       pinLength={pin.length}
       step={step}
       title={title}

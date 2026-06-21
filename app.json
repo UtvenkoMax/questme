@@ -4,11 +4,11 @@
     "slug": "questme",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/icon-questme-generated.png",
     "scheme": "questme",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/images/icon-questme-generated.png",
       "infoPlist": {
         "NSFaceIDUsageDescription": "QuestMe використовує Face ID для безпечного входу до вашого облікового запису."
       },
@@ -18,16 +18,14 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#0A0A0F",
+        "foregroundImage": "./assets/images/icon-questme-generated.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/icon-questme-generated.png"
     },
     "plugins": [
       "expo-router",
@@ -49,7 +47,24 @@
           "configureAndroidBackup": true,
           "faceIDPermission": "QuestMe використовує Face ID для захисту локальних даних входу."
         }
-      ]
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "QuestMe використовує геолокацію для відображення квестів поблизу."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "QuestMe використовує фото та відео як доказ виконання завдань.",
+          "cameraPermission": "QuestMe використовує камеру, щоб ви могли зняти доказ виконання завдання.",
+          "microphonePermission": "QuestMe використовує мікрофон для відеодоказів виконання завдань."
+        }
+      ],
+      "expo-localization",
+      "expo-font",
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,

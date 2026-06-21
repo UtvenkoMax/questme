@@ -1,40 +1,55 @@
-import { Image } from 'expo-image';
+import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import * as SplashScreen from 'expo-splash-screen';
 
-import { SlideToRegister } from '@/components/auth/slide-to-register';
-import { startScreenStyles as styles } from '@/components/auth/start-screen.styles';
+import { getAuthSession, getUserProfile, hasPin, isOnboardingSeen } from '@/services/auth-service';
 
-export default function StartScreen() {
-  const [showSlider, setShowSlider] = useState(false);
+type Destination = '/onboarding' | '/register' | '/pin-code' | '/login' | '/quests';
+
+// Запобігаємо автоматичному приховуванню Splash екрану
+SplashScreen.preventAutoHideAsync();
+
+export default function EntryScreen() {
+  const [destination, setDestination] = useState<Destination | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowSlider(true);
-    }, 2000);
+    let isMounted = true;
 
+    async function resolveDestination() {
+      try {
+        const [onboardingSeen, profile, pinExists, session] = await Promise.all([
+          isOnboardingSeen(),
+          getUserProfile(),
+          hasPin(),
+          getAuthSession(),
+        ]);
+
+        if (!isMounted) return;
+
+        if (!onboardingSeen) {
+          setDestination('/onboarding');
+        } else if (!profile) {
+          setDestination('/register');
+        } else {
+          setDestination(pinExists ? (session ? '/quests' : '/login') : '/pin-code');
+        }
+      } catch {
+        // У разі помилки відправляємо на онбординг як фолбек
+        if (isMounted) setDestination('/onboarding');
+      } finally {
+        // Ховаємо Splash screen ТІЛЬКИ коли визначили куди йти
+        await SplashScreen.hideAsync();
+      }
+    }
+
+    resolveDestination();
     return () => {
-      clearTimeout(timer);
+      isMounted = false;
     };
   }, []);
 
-  return (
-    <View style={styles.screen}>
-      <Image
-        accessibilityLabel="Стартове зображення QuestMe"
-        contentFit="cover"
-        source={require('@/assets/images/startimage.png')}
-        style={StyleSheet.absoluteFill}
-      />
+  if (destination) return <Redirect href={destination} />;
 
-      <SafeAreaView style={styles.safeArea}>
-        {showSlider && (
-          <View style={styles.sliderPanel}>
-            <SlideToRegister />
-          </View>
-        )}
-      </SafeAreaView>
-    </View>
-  );
+  // Повертаємо null, оскільки Splash screen все ще показується
+  return null; 
 }

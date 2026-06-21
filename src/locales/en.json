@@ -1,0 +1,17 @@
+{
+  "tabs": {
+    "map": "Map",
+    "profile": "Profile",
+    "publish": "Publish",
+    "quests": "Quests",
+    "videos": "Videos"
+  },
+  "home": {
+    "title": "Available Quests",
+    "noQuests": "No quests found nearby"
+  },
+  "profile": {
+    "title": "My Profile",
+    "settings": "Settings"
+  }
+}

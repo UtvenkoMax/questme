@@ -1,0 +1,12 @@
+[package]
+name = "questme-geo-engine"
+version = "0.1.0"
+edition = "2021"
+description = "High-performance geo calculations for QuestMe"
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

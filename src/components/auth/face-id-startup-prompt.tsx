@@ -1,5 +1,6 @@
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
+import { usePathname } from 'expo-router';
 import { useCallback, useEffect, useRef } from 'react';
 import { Alert, AppState, type AppStateStatus } from 'react-native';
 
@@ -15,6 +16,7 @@ import {
 } from './biometric-auth';
 
 export function FaceIdStartupPrompt() {
+  const pathname = usePathname();
   const appState = useRef<AppStateStatus>(AppState.currentState);
   const promptInFlight = useRef(false);
   const promptedInActiveSession = useRef(false);
@@ -77,6 +79,8 @@ export function FaceIdStartupPrompt() {
   }, []);
 
   const maybePromptForFaceId = useCallback(async () => {
+    const canPromptOnRoute = pathname === '/quests' || pathname === '/profile' || pathname === '/security';
+    if (!canPromptOnRoute) return;
     if (!isIphone() || promptInFlight.current) return;
 
     promptInFlight.current = true;
@@ -109,7 +113,7 @@ export function FaceIdStartupPrompt() {
     } finally {
       promptInFlight.current = false;
     }
-  }, [showEnrollmentAlert, showExpoGoAlert, showSetupAlert]);
+  }, [pathname, showEnrollmentAlert, showExpoGoAlert, showSetupAlert]);
 
   useEffect(() => {
     const timer = setTimeout(maybePromptForFaceId, 900);
