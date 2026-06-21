@@ -92,9 +92,15 @@ export default function CreateQuestScreen() {
   };
 
   const back = () => {
-    setMessage("");
-    setStep((value) => Math.max(value - 1, 0));
-  };
+  setMessage("");
+
+  if (step === 0) {
+    router.push("/");
+    return;
+  }
+
+  setStep((value) => Math.max(value - 1, 0));
+};
 
   const publish = async () => {
     const reserveResult = reserveQuestReward(task.trim(), reward, {
