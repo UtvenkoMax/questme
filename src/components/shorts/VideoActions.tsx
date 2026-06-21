@@ -29,19 +29,19 @@ export function VideoActions({ short }: VideoActionsProps) {
         title: short.title,
       });
     } catch {
-      Linking.openURL(short.shortsUrl).catch(() => {});
+      Linking.openURL(short.shortsUrl).catch(() => { });
     }
   };
 
   return (
     <View style={styles.actions}>
-      <Action 
-        icon={<Heart color={liked ? questColors.ember : questColors.textPrimary} size={26} weight={liked ? "fill" : "regular"} />} 
-        label={likesCount} 
+      <Action
+        icon={<Heart color={liked ? questColors.ember : questColors.textPrimary} size={26} weight={liked ? "fill" : "regular"} />}
+        label={likesCount}
         onPress={toggleLike}
       />
       <Action icon={<ChatCircle color={questColors.textPrimary} size={26} />} label={short.commentCount ?? 'Ком.'} />
-      <Action icon={<Eye color={questColors.textPrimary} size={26} />} label={short.viewCount ?? 'Views'} />
+
       <Action icon={<ShareFat color={questColors.textPrimary} size={26} />} label="Share" onPress={shareShort} />
     </View>
   );
@@ -52,7 +52,7 @@ function Action({ icon, label, onPress }: { icon: React.ReactNode; label: string
     <Pressable
       accessibilityRole="button"
       onPress={() => {
-        Haptics.selectionAsync().catch(() => {});
+        Haptics.selectionAsync().catch(() => { });
         onPress?.();
       }}
       style={({ pressed }) => [styles.action, pressed && styles.pressed]}>

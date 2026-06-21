@@ -97,7 +97,7 @@ export default function OnboardingScreen() {
         <StepIndicator count={slides.length} index={index} />
         {index === slides.length - 1 ? (
           <View style={styles.ctaRow}>
-            <ChaosButton label="Увійти" onPress={() => router.replace('/login')} style={styles.ctaHalf} variant="outline" />
+
             <ChaosButton label="Почати безкоштовно" onPress={complete} style={styles.ctaGrow} />
           </View>
         ) : (
