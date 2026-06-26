@@ -1,19 +1,30 @@
-import { Stack, type ErrorBoundaryProps } from 'expo-router';
-import { useFonts as useInterFonts, Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
-import { JetBrainsMono_600SemiBold } from '@expo-google-fonts/jetbrains-mono';
-import { SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
-import { StatusBar } from 'expo-status-bar';
-import { Text, View, StyleSheet } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider, initialWindowMetrics, SafeAreaView } from 'react-native-safe-area-context';
-import { QueryClientProvider } from '@tanstack/react-query';
+import {
+    Inter_400Regular,
+    Inter_600SemiBold,
+    useFonts as useInterFonts,
+} from "@expo-google-fonts/inter";
+import { JetBrainsMono_600SemiBold } from "@expo-google-fonts/jetbrains-mono";
+import { SpaceGrotesk_700Bold } from "@expo-google-fonts/space-grotesk";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { Stack, type ErrorBoundaryProps } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { StyleSheet, Text, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import {
+    initialWindowMetrics,
+    SafeAreaProvider,
+    SafeAreaView,
+} from "react-native-safe-area-context";
 
-import { FaceIdStartupPrompt } from '@/components/auth/face-id-startup-prompt';
-import { AppPreferencesProvider, useAppTheme } from '@/components/providers/app-preferences';
-import { Button } from '@/components/ui/button';
-import { queryClient } from '@/lib/query-client';
-import { colors, spacing, typography } from '@/theme';
-import '@/locales/i18n';
+import { FaceIdStartupPrompt } from "@/components/auth/face-id-startup-prompt";
+import {
+    AppPreferencesProvider,
+    useAppTheme,
+} from "@/components/providers/app-preferences";
+import { Button } from "@/components/ui/button";
+import { queryClient } from "@/lib/query-client";
+import "@/locales/i18n";
+import { colors, spacing, typography } from "@/theme";
 
 export default function RootLayout() {
   const [fontsLoaded] = useInterFonts({
@@ -54,10 +65,15 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   return (
     <SafeAreaView style={errorStyles.screen}>
       <View style={errorStyles.card}>
-        <Text style={errorStyles.eyebrow}>QuestMe</Text>
+        <Text style={errorStyles.eyebrow}>Помилка</Text>
         <Text style={errorStyles.title}>Щось пішло не так</Text>
         <Text style={errorStyles.message}>{error.message}</Text>
-        <Button fullWidth={false} icon="refresh-cw" onPress={retry} title="Спробувати ще раз" />
+        <Button
+          fullWidth={false}
+          icon="refresh-cw"
+          onPress={retry}
+          title="Спробувати ще раз"
+        />
       </View>
     </SafeAreaView>
   );
@@ -84,7 +100,7 @@ const errorStyles = StyleSheet.create({
   screen: {
     backgroundColor: colors.background,
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   title: {
     ...typography.titleCompact,

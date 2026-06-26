@@ -1,9 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-
 import { authenticateWithBiometrics } from '@/components/auth/biometric-auth';
-import { GlitchLogo } from '@/components/auth/GlitchLogo';
 import { PinEntryPanel } from '@/components/auth/pin-entry-panel';
 import { PIN_LENGTH } from '@/components/auth/pin-code.types';
 import { ChaosButton } from '@/components/ui/chaos';
@@ -185,7 +183,6 @@ export default function LoginScreen() {
   return (
     <Screen contentStyle={styles.content} scroll={false}>
       <View style={styles.card}>
-        <GlitchLogo compact={compact} />
         <View style={styles.header}>
           <Text style={styles.kicker}>SECURE ENTRY</Text>
           <Text style={styles.title}>Вхід</Text>

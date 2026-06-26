@@ -1,56 +1,77 @@
-import { useRouter } from 'expo-router';
-import { PencilSimple, ShieldCheck } from 'phosphor-react-native';
-import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useRouter } from "expo-router";
+import { PencilSimple, ShieldCheck } from "phosphor-react-native";
+import { useEffect, useMemo, useState } from "react";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
-import { AchievementBadge } from '@/components/profile/AchievementBadge';
-import { AvatarPickerModal } from '@/components/profile/AvatarPickerModal';
-import { StatBlock } from '@/components/profile/StatBlock';
-import { TransactionItem } from '@/components/profile/TransactionItem';
-import { ChaosAvatar, ChaosBadge, ChaosButton, SectionKicker } from '@/components/ui/chaos';
-import { LoadingState } from '@/components/ui/status';
-import { Screen } from '@/components/ui/screen';
-import { getAvatarPhotoIdForAccount, getAvatarPhotoSource } from '@/constants/avatarPhotos';
-import { questColors } from '@/constants/colors';
-import { radii, spacing } from '@/constants/spacing';
-import { typography } from '@/constants/typography';
-import { useProfileDashboard } from '@/hooks/useProfile';
-import { getUserProfile, type UserProfile } from '@/services/auth-service';
+import { AchievementBadge } from "@/components/profile/AchievementBadge";
+import { AvatarPickerModal } from "@/components/profile/AvatarPickerModal";
+import { StatBlock } from "@/components/profile/StatBlock";
+import { TransactionItem } from "@/components/profile/TransactionItem";
 import {
-  selectActiveEscrows,
-  selectFormattedBalance,
-  selectFormattedEscrowBalance,
-  selectTransactions,
-  selectWalletSummary,
-  useWalletStore,
-  type TransactionType,
-  type WalletTransaction,
-} from '@/store';
+    ChaosAvatar,
+    ChaosBadge,
+    ChaosButton,
+    SectionKicker,
+} from "@/components/ui/chaos";
+import { Screen } from "@/components/ui/screen";
+import { LoadingState } from "@/components/ui/status";
+import {
+    getAvatarPhotoIdForAccount,
+    getAvatarPhotoSource,
+} from "@/constants/avatarPhotos";
+import { questColors } from "@/constants/colors";
+import { radii, spacing } from "@/constants/spacing";
+import { typography } from "@/constants/typography";
+import { useProfileDashboard } from "@/hooks/useProfile";
+import { getUserProfile, type UserProfile } from "@/services/auth-service";
+import {
+    selectActiveEscrows,
+    selectFormattedBalance,
+    selectFormattedEscrowBalance,
+    selectTransactions,
+    selectWalletSummary,
+    useWalletStore,
+    type TransactionType,
+    type WalletTransaction,
+} from "@/store";
 
-type ProfileTab = 'activity' | 'achievements' | 'wallet';
-type WalletFilter = 'all' | 'income' | 'spend' | 'escrow' | 'promo' | 'premium' | 'fees';
+type ProfileTab = "activity" | "achievements" | "wallet";
+type WalletFilter =
+  | "all"
+  | "income"
+  | "spend"
+  | "escrow"
+  | "promo"
+  | "premium"
+  | "fees";
 
 const walletFilters: { id: WalletFilter; label: string }[] = [
-  { id: 'all', label: 'Усі' },
-  { id: 'income', label: 'Надходження' },
-  { id: 'spend', label: 'Витрати' },
-  { id: 'escrow', label: 'Escrow' },
-  { id: 'promo', label: 'Промо' },
-  { id: 'premium', label: 'Premium' },
-  { id: 'fees', label: 'Комісії' },
+  { id: "all", label: "Усі" },
+  { id: "income", label: "Надходження" },
+  { id: "spend", label: "Витрати" },
+  { id: "escrow", label: "Escrow" },
+  { id: "promo", label: "Промо" },
+  { id: "premium", label: "Premium" },
+  { id: "fees", label: "Комісії" },
 ];
 
-const walletFilterTypes: Record<Exclude<WalletFilter, 'all' | 'income' | 'spend'>, TransactionType[]> = {
-  escrow: ['escrow_hold', 'escrow_refund', 'escrow_release'],
-  fees: ['platform_fee'],
-  premium: ['premium_quest'],
-  promo: ['promo_bonus', 'referral_bonus'],
+const walletFilterTypes: Record<
+  Exclude<WalletFilter, "all" | "income" | "spend">,
+  TransactionType[]
+> = {
+  escrow: ["escrow_hold", "escrow_refund", "escrow_release"],
+  fees: ["platform_fee"],
+  premium: ["premium_quest"],
+  promo: ["promo_bonus", "referral_bonus"],
 };
 
-function filterWalletTransaction(transaction: WalletTransaction, filter: WalletFilter) {
-  if (filter === 'all') return true;
-  if (filter === 'income') return transaction.numericAmount > 0;
-  if (filter === 'spend') return transaction.numericAmount < 0;
+function filterWalletTransaction(
+  transaction: WalletTransaction,
+  filter: WalletFilter,
+) {
+  if (filter === "all") return true;
+  if (filter === "income") return transaction.numericAmount > 0;
+  if (filter === "spend") return transaction.numericAmount < 0;
   return walletFilterTypes[filter].includes(transaction.type);
 }
 
@@ -58,7 +79,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const dashboard = useProfileDashboard();
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [activeTab, setActiveTab] = useState<ProfileTab>('activity');
+  const [activeTab, setActiveTab] = useState<ProfileTab>("activity");
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -67,7 +88,7 @@ export default function ProfileScreen() {
     getUserProfile().then((storedProfile) => {
       if (!mounted) return;
       if (!storedProfile) {
-        router.replace('/');
+        router.replace("/");
         return;
       }
       setProfile(storedProfile);
@@ -86,31 +107,52 @@ export default function ProfileScreen() {
     );
   }
 
-  const initials = (profile?.name ?? 'QM')
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2);
+  const initials = profile?.name
+    ? profile.name
+        .split(" ")
+        .map((part) => part[0])
+        .join("")
+        .slice(0, 2)
+    : "";
+  const isBrandName = profile?.name?.trim().toLowerCase() === "questme";
+  const displayName = !isBrandName && profile?.name ? profile.name : "Профіль";
+  const avatarLabel = !isBrandName ? initials : "";
   const avatarSource =
-    profile?.avatarKind === 'custom' && profile.avatarUri
+    profile?.avatarKind === "custom" && profile.avatarUri
       ? { uri: profile.avatarUri }
-      : getAvatarPhotoSource(profile?.avatarId) ??
-      getAvatarPhotoSource(getAvatarPhotoIdForAccount(profile?.email ?? profile?.id ?? initials));
-  const avatarEmoji = profile?.avatarKind === 'emoji' ? profile.avatarEmoji : undefined;
+      : (getAvatarPhotoSource(profile?.avatarId) ??
+        getAvatarPhotoSource(
+          getAvatarPhotoIdForAccount(profile?.email ?? profile?.id ?? ""),
+        ));
+  const avatarEmoji =
+    profile?.avatarKind === "emoji" ? profile.avatarEmoji : undefined;
 
   return (
     <Screen contentStyle={styles.content}>
       <View style={styles.headerCard}>
         <View style={styles.headerTop}>
-          <ChaosAvatar emoji={avatarEmoji} label={initials} size={86} source={avatarEmoji ? undefined : avatarSource} />
+          <ChaosAvatar
+            emoji={avatarEmoji}
+            label={avatarLabel}
+            size={86}
+            source={avatarEmoji ? undefined : avatarSource}
+          />
           <View style={styles.headerCopy}>
-            <Text style={styles.name}>{profile?.name ?? 'QuestMe'}</Text>
-            <Text style={styles.level}>{dashboard.stats.level} «{dashboard.stats.title}»</Text>
+            <Text style={styles.name}>{displayName}</Text>
+            <Text style={styles.level}>
+              {dashboard.stats.level} «{dashboard.stats.title}»
+            </Text>
             <ChaosBadge tone="acid">streak 7 днів</ChaosBadge>
           </View>
         </View>
         <ChaosButton
-          icon={<PencilSimple color={questColors.textPrimary} size={18} weight="bold" />}
+          icon={
+            <PencilSimple
+              color={questColors.textPrimary}
+              size={18}
+              weight="bold"
+            />
+          }
           label="Змінити аватар"
           onPress={() => setAvatarPickerOpen(true)}
           variant="outline"
@@ -122,25 +164,38 @@ export default function ProfileScreen() {
         </View>
         <View style={styles.actions}>
           <ChaosButton
-            icon={<ShieldCheck color={questColors.void} size={18} weight="bold" />}
+            icon={
+              <ShieldCheck color={questColors.void} size={18} weight="bold" />
+            }
             label="Безпека"
-            onPress={() => router.push('/security')}
+            onPress={() => router.push("/security")}
             style={styles.action}
             variant="electric"
           />
-
         </View>
       </View>
 
       <View style={styles.tabs}>
-        <TabButton active={activeTab === 'activity'} label="Активність" onPress={() => setActiveTab('activity')} />
-        <TabButton active={activeTab === 'achievements'} label="Досягнення" onPress={() => setActiveTab('achievements')} />
-        <TabButton active={activeTab === 'wallet'} label="Гаманець" onPress={() => setActiveTab('wallet')} />
+        <TabButton
+          active={activeTab === "activity"}
+          label="Активність"
+          onPress={() => setActiveTab("activity")}
+        />
+        <TabButton
+          active={activeTab === "achievements"}
+          label="Досягнення"
+          onPress={() => setActiveTab("achievements")}
+        />
+        <TabButton
+          active={activeTab === "wallet"}
+          label="Гаманець"
+          onPress={() => setActiveTab("wallet")}
+        />
       </View>
 
-      {activeTab === 'activity' ? <ActivityTab /> : null}
-      {activeTab === 'achievements' ? <AchievementsTab /> : null}
-      {activeTab === 'wallet' ? <WalletTab /> : null}
+      {activeTab === "activity" ? <ActivityTab /> : null}
+      {activeTab === "achievements" ? <AchievementsTab /> : null}
+      {activeTab === "wallet" ? <WalletTab /> : null}
       <AvatarPickerModal
         onClose={() => setAvatarPickerOpen(false)}
         onProfileChange={setProfile}
@@ -151,10 +206,24 @@ export default function ProfileScreen() {
   );
 }
 
-function TabButton({ active, label, onPress }: { active: boolean; label: string; onPress: () => void }) {
+function TabButton({
+  active,
+  label,
+  onPress,
+}: {
+  active: boolean;
+  label: string;
+  onPress: () => void;
+}) {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={[styles.tab, active && styles.tabActive]}>
-      <Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text>
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={[styles.tab, active && styles.tabActive]}
+    >
+      <Text style={[styles.tabText, active && styles.tabTextActive]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -169,13 +238,19 @@ function ActivityTab() {
           <ChaosAvatar
             label={item.name.slice(0, 2)}
             size={42}
-            source={getAvatarPhotoSource(getAvatarPhotoIdForAccount(`${item.id}:${item.name}`))}
+            source={getAvatarPhotoSource(
+              getAvatarPhotoIdForAccount(`${item.id}:${item.name}`),
+            )}
           />
           <View style={styles.activityCopy}>
-            <Text style={styles.activityTitle}>#{item.rank} {item.name}</Text>
-            <Text style={styles.activityText}>заробив {item.earned} цього тижня</Text>
+            <Text style={styles.activityTitle}>
+              #{item.rank} {item.name}
+            </Text>
+            <Text style={styles.activityText}>
+              заробив {item.earned} цього тижня
+            </Text>
           </View>
-          <ChaosBadge tone={item.rank <= 3 ? 'acid' : 'muted'}>top</ChaosBadge>
+          <ChaosBadge tone={item.rank <= 3 ? "acid" : "muted"}>top</ChaosBadge>
         </View>
       ))}
     </View>
@@ -198,9 +273,9 @@ function AchievementsTab() {
 
 function WalletTab() {
   const router = useRouter();
-  const [filter, setFilter] = useState<WalletFilter>('all');
-  const [promoCode, setPromoCode] = useState('');
-  const [promoMessage, setPromoMessage] = useState('');
+  const [filter, setFilter] = useState<WalletFilter>("all");
+  const [promoCode, setPromoCode] = useState("");
+  const [promoMessage, setPromoMessage] = useState("");
   const formattedBalance = useWalletStore(selectFormattedBalance);
   const formattedEscrowBalance = useWalletStore(selectFormattedEscrowBalance);
   const transactions = useWalletStore(selectTransactions);
@@ -210,15 +285,18 @@ function WalletTab() {
   const releaseEscrow = useWalletStore((state) => state.releaseEscrow);
   const refundEscrow = useWalletStore((state) => state.refundEscrow);
   const filteredTransactions = useMemo(
-    () => transactions.filter((transaction) => filterWalletTransaction(transaction, filter)),
-    [filter, transactions]
+    () =>
+      transactions.filter((transaction) =>
+        filterWalletTransaction(transaction, filter),
+      ),
+    [filter, transactions],
   );
 
   const submitPromo = () => {
     const result = applyPromoCode(promoCode);
     setPromoMessage(result.message);
     if (result.ok) {
-      setPromoCode('');
+      setPromoCode("");
     }
   };
 
@@ -227,15 +305,39 @@ function WalletTab() {
       <View style={styles.walletHero}>
         <Text style={styles.walletLabel}>Баланс</Text>
         <Text style={styles.walletValue}>{formattedBalance}</Text>
-        <Text style={styles.walletSubtle}>В escrow заблоковано: {formattedEscrowBalance}</Text>
+        <Text style={styles.walletSubtle}>
+          В escrow заблоковано: {formattedEscrowBalance}
+        </Text>
         <View style={styles.walletStats}>
-          <WalletMetric label="бонуси" value={`${summary.bonuses} грн`} tone="success" />
-          <WalletMetric label="комісії" value={`${summary.fees} грн`} tone="ember" />
-          <WalletMetric label="premium" value={`${summary.premium} грн`} tone="electric" />
+          <WalletMetric
+            label="бонуси"
+            value={`${summary.bonuses} грн`}
+            tone="success"
+          />
+          <WalletMetric
+            label="комісії"
+            value={`${summary.fees} грн`}
+            tone="ember"
+          />
+          <WalletMetric
+            label="premium"
+            value={`${summary.premium} грн`}
+            tone="electric"
+          />
         </View>
         <View style={styles.actions}>
-          <ChaosButton label="Поповнити" onPress={() => router.push('/wallet-topup')} style={styles.action} variant="ember" />
-          <ChaosButton label="Вивести" onPress={() => router.push('/wallet-withdraw')} style={styles.action} variant="outline" />
+          <ChaosButton
+            label="Поповнити"
+            onPress={() => router.push("/wallet-topup")}
+            style={styles.action}
+            variant="ember"
+          />
+          <ChaosButton
+            label="Вивести"
+            onPress={() => router.push("/wallet-withdraw")}
+            style={styles.action}
+            variant="outline"
+          />
         </View>
       </View>
 
@@ -246,7 +348,7 @@ function WalletTab() {
             autoCapitalize="characters"
             onChangeText={(value) => {
               setPromoCode(value.toUpperCase());
-              if (promoMessage) setPromoMessage('');
+              if (promoMessage) setPromoMessage("");
             }}
             placeholder="QUESTME100"
             placeholderTextColor={questColors.textSecondary}
@@ -261,8 +363,15 @@ function WalletTab() {
             variant="electric"
           />
         </View>
-        <Text style={promoMessage.includes('додано') ? styles.promoSuccess : styles.promoHint}>
-          {promoMessage || 'Демо-коди: QUESTME100, CREATOR20. Інвайт-код INVITE50 уже активовано.'}
+        <Text
+          style={
+            promoMessage.includes("додано")
+              ? styles.promoSuccess
+              : styles.promoHint
+          }
+        >
+          {promoMessage ||
+            "Демо-коди: QUESTME100, CREATOR20. Інвайт-код INVITE50 уже активовано."}
         </Text>
       </View>
 
@@ -275,7 +384,9 @@ function WalletTab() {
                 <Text style={styles.escrowTitle}>{escrow.questTitle}</Text>
                 <Text style={styles.escrowText}>
                   {escrow.amount} грн заблоковано · комісія {escrow.fee} грн
-                  {escrow.premiumFee ? ` · premium ${escrow.premiumFee} грн` : ''}
+                  {escrow.premiumFee
+                    ? ` · premium ${escrow.premiumFee} грн`
+                    : ""}
                 </Text>
               </View>
               <View style={styles.escrowActions}>
@@ -319,16 +430,34 @@ function WalletTab() {
         />
       ))}
       {!filteredTransactions.length ? (
-        <Text style={styles.emptyText}>За цим фільтром транзакцій поки немає.</Text>
+        <Text style={styles.emptyText}>
+          За цим фільтром транзакцій поки немає.
+        </Text>
       ) : null}
     </View>
   );
 }
 
-function WalletFilterChip({ active, label, onPress }: { active: boolean; label: string; onPress: () => void }) {
+function WalletFilterChip({
+  active,
+  label,
+  onPress,
+}: {
+  active: boolean;
+  label: string;
+  onPress: () => void;
+}) {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={[styles.filterChip, active && styles.filterChipActive]}>
-      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{label}</Text>
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={[styles.filterChip, active && styles.filterChipActive]}
+    >
+      <Text
+        style={[styles.filterChipText, active && styles.filterChipTextActive]}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -339,7 +468,7 @@ function WalletMetric({
   value,
 }: {
   label: string;
-  tone: 'electric' | 'ember' | 'success';
+  tone: "electric" | "ember" | "success";
   value: string;
 }) {
   return (
@@ -347,7 +476,11 @@ function WalletMetric({
       <Text
         style={[
           styles.walletMetricValue,
-          tone === 'ember' ? styles.walletMetricEmber : tone === 'success' ? styles.walletMetricSuccess : null,
+          tone === "ember"
+            ? styles.walletMetricEmber
+            : tone === "success"
+              ? styles.walletMetricSuccess
+              : null,
         ]}
       >
         {value}
@@ -362,7 +495,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   actions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing.sm,
   },
   activityCopy: {
@@ -371,12 +504,12 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   activityRow: {
-    alignItems: 'center',
+    alignItems: "center",
     backgroundColor: questColors.surfaceUp,
     borderColor: questColors.border,
     borderRadius: radii.sm,
     borderWidth: 1,
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing.md,
     padding: spacing.md,
   },
@@ -389,8 +522,8 @@ const styles = StyleSheet.create({
     color: questColors.textPrimary,
   },
   badgeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.sm,
   },
   content: {
@@ -410,22 +543,22 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   headerTop: {
-    alignItems: 'center',
-    flexDirection: 'row',
+    alignItems: "center",
+    flexDirection: "row",
     gap: spacing.md,
   },
   emptyText: {
     ...typography.caption,
     color: questColors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
   },
   escrowAction: {
     flex: 1,
     minWidth: 130,
   },
   escrowActions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.sm,
   },
   escrowCopy: {
@@ -456,8 +589,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   filterChipActive: {
-    backgroundColor: 'rgba(196,255,0,0.14)',
-    borderColor: 'rgba(196,255,0,0.44)',
+    backgroundColor: "rgba(196,255,0,0.14)",
+    borderColor: "rgba(196,255,0,0.44)",
   },
   filterChipText: {
     ...typography.label,
@@ -467,8 +600,8 @@ const styles = StyleSheet.create({
     color: questColors.acid,
   },
   filterRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.xs,
   },
   level: {
@@ -502,9 +635,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   promoRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.sm,
   },
   promoSuccess: {
@@ -512,13 +645,13 @@ const styles = StyleSheet.create({
     color: questColors.success,
   },
   stats: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.sm,
   },
   tab: {
-    alignItems: 'center',
-    borderBottomColor: 'transparent',
+    alignItems: "center",
+    borderBottomColor: "transparent",
     borderBottomWidth: 2,
     flex: 1,
     paddingVertical: spacing.sm,
@@ -538,11 +671,11 @@ const styles = StyleSheet.create({
     borderColor: questColors.border,
     borderRadius: radii.sm,
     borderWidth: 1,
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: spacing.xs,
   },
   walletHero: {
-    backgroundColor: 'rgba(124,58,255,0.16)',
+    backgroundColor: "rgba(124,58,255,0.16)",
     borderColor: questColors.border,
     borderRadius: radii.md,
     borderWidth: 1,
@@ -560,10 +693,10 @@ const styles = StyleSheet.create({
   walletLabel: {
     ...typography.label,
     color: questColors.acid,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
   walletMetric: {
-    backgroundColor: 'rgba(10,10,18,0.42)',
+    backgroundColor: "rgba(10,10,18,0.42)",
     borderColor: questColors.border,
     borderRadius: radii.sm,
     borderWidth: 1,
@@ -578,7 +711,7 @@ const styles = StyleSheet.create({
   walletMetricLabel: {
     ...typography.eyebrow,
     color: questColors.textSecondary,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
   walletMetricSuccess: {
     color: questColors.success,
@@ -588,8 +721,8 @@ const styles = StyleSheet.create({
     color: questColors.electric,
   },
   walletStats: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.sm,
   },
   walletSubtle: {

@@ -1,17 +1,19 @@
-import { Eye, EyeSlash } from 'phosphor-react-native';
-import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Eye, EyeSlash } from "phosphor-react-native";
+import { useMemo, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { AuthInput } from '@/components/auth/AuthInput';
-import { GlitchLogo } from '@/components/auth/GlitchLogo';
-import { StepIndicator } from '@/components/auth/StepIndicator';
-import { ChaosButton } from '@/components/ui/chaos';
-import { ConfettiBurst } from '@/components/ui/confetti';
-import { Screen } from '@/components/ui/screen';
-import { questColors } from '@/constants/colors';
-import { radii, spacing } from '@/constants/spacing';
-import { typography } from '@/constants/typography';
-import type { PasswordStrength, RegistrationErrors } from '@/services/auth-service';
+import { AuthInput } from "@/components/auth/AuthInput";
+import { StepIndicator } from "@/components/auth/StepIndicator";
+import { ChaosButton } from "@/components/ui/chaos";
+import { ConfettiBurst } from "@/components/ui/confetti";
+import { Screen } from "@/components/ui/screen";
+import { questColors } from "@/constants/colors";
+import { radii, spacing } from "@/constants/spacing";
+import { typography } from "@/constants/typography";
+import type {
+    PasswordStrength,
+    RegistrationErrors,
+} from "@/services/auth-service";
 
 type RegisterScreenViewProps = {
   canSubmit: boolean;
@@ -87,23 +89,32 @@ export function RegisterScreenView({
       <ConfettiBurst active={showConfetti} />
       <View style={styles.particles}>
         {Array.from({ length: 18 }, (_, index) => (
-          <View key={index} style={[styles.particle, { left: `${(index * 29) % 94}%`, top: `${(index * 47) % 88}%` }]} />
+          <View
+            key={index}
+            style={[
+              styles.particle,
+              { left: `${(index * 29) % 94}%`, top: `${(index * 47) % 88}%` },
+            ]}
+          />
         ))}
       </View>
 
       <View style={styles.card}>
-        <GlitchLogo />
         <View style={styles.header}>
           <Text style={styles.kicker}>AUTH SEQUENCE</Text>
           <Text style={styles.title}>
-            {step === 0 ? 'Як тебе називати?' : step === 1 ? 'Куди надсилати оплату?' : 'Захисти профіль.'}
+            {step === 0
+              ? "Як тебе називати?"
+              : step === 1
+                ? "Куди надсилати оплату?"
+                : "Захисти профіль."}
           </Text>
           <Text style={styles.subtitle}>
             {step === 0
-              ? 'Один крок за раз. QuestMe не любить нудні форми.'
+              ? "Один крок за раз. QuestMe не любить нудні форми."
               : step === 1
-                ? 'Email потрібен для відновлення доступу та платіжних квитанцій.'
-                : 'Пароль лишається локальним, PIN налаштуємо після створення профілю.'}
+                ? "Email потрібен для відновлення доступу та платіжних квитанцій."
+                : "Пароль лишається локальним, PIN налаштуємо після створення профілю."}
           </Text>
         </View>
 
@@ -116,7 +127,7 @@ export function RegisterScreenView({
             helper={stepError}
             label="Username"
             onChangeText={onChangeName}
-            placeholder="Наприклад: max.glitch"
+            placeholder="Наприклад: max"
             textContentType="name"
             value={name}
           />
@@ -150,13 +161,19 @@ export function RegisterScreenView({
               textContentType="newPassword"
               value={password}
             />
-            <Pressable accessibilityRole="button" onPress={onTogglePasswordVisibility} style={styles.eyeButton}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={onTogglePasswordVisibility}
+              style={styles.eyeButton}
+            >
               {showPassword ? (
                 <EyeSlash color={questColors.textPrimary} size={18} />
               ) : (
                 <Eye color={questColors.textPrimary} size={18} />
               )}
-              <Text style={styles.eyeText}>{showPassword ? 'Приховати' : 'Показати'}</Text>
+              <Text style={styles.eyeText}>
+                {showPassword ? "Приховати" : "Показати"}
+              </Text>
             </Pressable>
             <View style={styles.strengthBars}>
               {[0, 1, 2].map((bar) => (
@@ -165,7 +182,9 @@ export function RegisterScreenView({
                   style={[
                     styles.strengthBar,
                     bar < passwordStrength.score && styles.strengthActive,
-                    passwordStrength.score === 3 && bar < passwordStrength.score && styles.strengthStrong,
+                    passwordStrength.score === 3 &&
+                      bar < passwordStrength.score &&
+                      styles.strengthStrong,
                   ]}
                 />
               ))}
@@ -176,12 +195,23 @@ export function RegisterScreenView({
         {submitError ? <Text style={styles.error}>{submitError}</Text> : null}
 
         <View style={styles.actions}>
-          <ChaosButton label="Назад" onPress={goBack} style={styles.actionButton} variant="outline" />
           <ChaosButton
-            label={isLast ? (isSubmitting ? 'Створюємо...' : 'Створити профіль') : 'Далі'}
+            label="Назад"
+            onPress={goBack}
+            style={styles.actionButton}
+            variant="outline"
+          />
+          <ChaosButton
+            label={
+              isLast
+                ? isSubmitting
+                  ? "Створюємо..."
+                  : "Створити профіль"
+                : "Далі"
+            }
             onPress={goNext}
             style={styles.actionButton}
-            variant={canGoNext ? 'ember' : 'ghost'}
+            variant={canGoNext ? "ember" : "ghost"}
           />
         </View>
       </View>
@@ -194,11 +224,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   actions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing.sm,
   },
   card: {
-    backgroundColor: 'rgba(17,17,24,0.88)',
+    backgroundColor: "rgba(17,17,24,0.88)",
     borderColor: questColors.border,
     borderRadius: radii.md,
     borderWidth: 1,
@@ -206,7 +236,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   content: {
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingBottom: spacing.xl,
     paddingTop: spacing.xl,
   },
@@ -215,9 +245,9 @@ const styles = StyleSheet.create({
     color: questColors.ember,
   },
   eyeButton: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
+    alignItems: "center",
+    alignSelf: "flex-start",
+    flexDirection: "row",
     gap: spacing.xs,
     paddingVertical: spacing.xs,
   },
@@ -237,7 +267,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     height: 2,
     opacity: 0.26,
-    position: 'absolute',
+    position: "absolute",
     width: 2,
   },
   particles: {
@@ -256,7 +286,7 @@ const styles = StyleSheet.create({
     height: 7,
   },
   strengthBars: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing.xs,
   },
   strengthStrong: {

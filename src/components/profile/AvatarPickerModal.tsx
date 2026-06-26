@@ -1,21 +1,29 @@
-import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
-import { Camera, DiceFive, ImageSquare, X } from 'phosphor-react-native';
-import { useState } from 'react';
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-
-import { ChaosButton } from '@/components/ui/chaos';
-import { avatarPhotoIds, avatarPhotoSources } from '@/constants/avatarPhotos';
-import { questColors } from '@/constants/colors';
-import { radii, spacing } from '@/constants/spacing';
-import { typography } from '@/constants/typography';
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
+import { Camera, DiceFive, ImageSquare, X } from "phosphor-react-native";
+import { useState } from "react";
 import {
-  createCustomAvatarChoice,
-  createGeneratedAvatarChoice,
-  createRandomEmojiAvatarChoice,
-  type AvatarChoice,
-} from '@/services/avatar-service';
-import { updateUserAvatar, type UserProfile } from '@/services/auth-service';
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
+} from "react-native";
+
+import { ChaosButton } from "@/components/ui/chaos";
+import { avatarPhotoIds, avatarPhotoSources } from "@/constants/avatarPhotos";
+import { questColors } from "@/constants/colors";
+import { radii, spacing } from "@/constants/spacing";
+import { typography } from "@/constants/typography";
+import { updateUserAvatar, type UserProfile } from "@/services/auth-service";
+import {
+    createCustomAvatarChoice,
+    createGeneratedAvatarChoice,
+    createRandomEmojiAvatarChoice,
+    type AvatarChoice,
+} from "@/services/avatar-service";
 
 const MAX_CUSTOM_AVATAR_BYTES = 6 * 1024 * 1024;
 
@@ -26,13 +34,18 @@ type AvatarPickerModalProps = {
   visible: boolean;
 };
 
-export function AvatarPickerModal({ onClose, onProfileChange, profile, visible }: AvatarPickerModalProps) {
-  const [message, setMessage] = useState('');
+export function AvatarPickerModal({
+  onClose,
+  onProfileChange,
+  profile,
+  visible,
+}: AvatarPickerModalProps) {
+  const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
   const close = () => {
     if (saving) return;
-    setMessage('');
+    setMessage("");
     onClose();
   };
 
@@ -40,14 +53,16 @@ export function AvatarPickerModal({ onClose, onProfileChange, profile, visible }
     if (!profile || saving) return;
 
     setSaving(true);
-    setMessage('');
+    setMessage("");
     try {
       const nextProfile = await updateUserAvatar(choice);
       onProfileChange(nextProfile);
-      setMessage('');
+      setMessage("");
       onClose();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Не вдалося оновити аватар.');
+      setMessage(
+        error instanceof Error ? error.message : "Не вдалося оновити аватар.",
+      );
     } finally {
       setSaving(false);
     }
@@ -58,15 +73,15 @@ export function AvatarPickerModal({ onClose, onProfileChange, profile, visible }
 
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      setMessage('Надайте доступ до фото, щоб поставити власну аватарку.');
+      setMessage("Надайте доступ до фото, щоб поставити власну аватарку.");
       return;
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
       aspect: [1, 1],
-      base64: Platform.OS === 'web',
-      mediaTypes: ['images'],
+      base64: Platform.OS === "web",
+      mediaTypes: ["images"],
       quality: 0.82,
     });
 
@@ -76,7 +91,7 @@ export function AvatarPickerModal({ onClose, onProfileChange, profile, visible }
     if (!asset) return;
 
     if (asset.fileSize && asset.fileSize > MAX_CUSTOM_AVATAR_BYTES) {
-      setMessage('Фото завелике. Оберіть зображення до 6 МБ.');
+      setMessage("Фото завелике. Оберіть зображення до 6 МБ.");
       return;
     }
 
@@ -84,36 +99,66 @@ export function AvatarPickerModal({ onClose, onProfileChange, profile, visible }
       const choice = await createCustomAvatarChoice(asset, profile.id);
       await saveChoice(choice);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Не вдалося підготувати фото.');
+      setMessage(
+        error instanceof Error ? error.message : "Не вдалося підготувати фото.",
+      );
     }
   };
 
   return (
-    <Modal animationType="slide" transparent visible={visible} onRequestClose={close}>
+    <Modal
+      animationType="slide"
+      transparent
+      visible={visible}
+      onRequestClose={close}
+    >
       <View style={styles.modalShade}>
         <View style={styles.sheet}>
           <View style={styles.sheetTop}>
             <View style={styles.titleBlock}>
               <Text style={styles.sheetTitle}>Аватарка</Text>
-              <Text style={styles.sheetText}>Обери одне зі згенерованих фото, random смайлик або власне фото.</Text>
+              <Text style={styles.sheetText}>
+                {" "}
+                одне зі згенерованих фото, random смайлик або власне фото.
+              </Text>
             </View>
-            <Pressable accessibilityRole="button" disabled={saving} onPress={close} style={styles.close}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={saving}
+              onPress={close}
+              style={styles.close}
+            >
               <X color={questColors.textPrimary} size={20} />
             </Pressable>
           </View>
 
-          <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            contentContainerStyle={styles.content}
+            showsVerticalScrollIndicator={false}
+          >
             <View style={styles.generatedGrid}>
               {avatarPhotoIds.map((avatarId) => {
-                const selected = profile?.avatarKind === 'generated' && profile.avatarId === avatarId;
+                const selected =
+                  profile?.avatarKind === "generated" &&
+                  profile.avatarId === avatarId;
                 return (
                   <Pressable
                     accessibilityRole="button"
                     disabled={saving}
                     key={avatarId}
-                    onPress={() => saveChoice(createGeneratedAvatarChoice(avatarId))}
-                    style={[styles.avatarOption, selected && styles.avatarOptionSelected]}>
-                    <Image contentFit="cover" source={avatarPhotoSources[avatarId]} style={styles.avatarImage} />
+                    onPress={() =>
+                      saveChoice(createGeneratedAvatarChoice(avatarId))
+                    }
+                    style={[
+                      styles.avatarOption,
+                      selected && styles.avatarOptionSelected,
+                    ]}
+                  >
+                    <Image
+                      contentFit="cover"
+                      source={avatarPhotoSources[avatarId]}
+                      style={styles.avatarImage}
+                    />
                   </Pressable>
                 );
               })}
@@ -124,13 +169,23 @@ export function AvatarPickerModal({ onClose, onProfileChange, profile, visible }
                 accessibilityRole="button"
                 disabled={saving}
                 onPress={() => saveChoice(createRandomEmojiAvatarChoice())}
-                style={[styles.wideChoice, profile?.avatarKind === 'emoji' && styles.wideChoiceSelected]}>
+                style={[
+                  styles.wideChoice,
+                  profile?.avatarKind === "emoji" && styles.wideChoiceSelected,
+                ]}
+              >
                 <View style={styles.emojiPreview}>
-                  <Text style={styles.emojiText}>{profile?.avatarKind === 'emoji' ? profile.avatarEmoji : '🙂'}</Text>
+                  <Text style={styles.emojiText}>
+                    {profile?.avatarKind === "emoji"
+                      ? profile.avatarEmoji
+                      : "🙂"}
+                  </Text>
                 </View>
                 <View style={styles.choiceCopy}>
                   <Text style={styles.choiceTitle}>Рандомний смайлик</Text>
-                  <Text style={styles.choiceText}>Застосунок сам вибере emoji-аватар.</Text>
+                  <Text style={styles.choiceText}>
+                    Застосунок сам вибере emoji-аватар.
+                  </Text>
                 </View>
                 <DiceFive color={questColors.acid} size={22} weight="bold" />
               </Pressable>
@@ -139,17 +194,31 @@ export function AvatarPickerModal({ onClose, onProfileChange, profile, visible }
                 accessibilityRole="button"
                 disabled={saving}
                 onPress={pickCustomPhoto}
-                style={[styles.wideChoice, profile?.avatarKind === 'custom' && styles.wideChoiceSelected]}>
+                style={[
+                  styles.wideChoice,
+                  profile?.avatarKind === "custom" && styles.wideChoiceSelected,
+                ]}
+              >
                 <View style={styles.customPreview}>
-                  {profile?.avatarKind === 'custom' && profile.avatarUri ? (
-                    <Image contentFit="cover" source={{ uri: profile.avatarUri }} style={styles.customImage} />
+                  {profile?.avatarKind === "custom" && profile.avatarUri ? (
+                    <Image
+                      contentFit="cover"
+                      source={{ uri: profile.avatarUri }}
+                      style={styles.customImage}
+                    />
                   ) : (
-                    <ImageSquare color={questColors.textPrimary} size={24} weight="bold" />
+                    <ImageSquare
+                      color={questColors.textPrimary}
+                      size={24}
+                      weight="bold"
+                    />
                   )}
                 </View>
                 <View style={styles.choiceCopy}>
                   <Text style={styles.choiceTitle}>Власне фото</Text>
-                  <Text style={styles.choiceText}>Вибери квадратне фото з галереї.</Text>
+                  <Text style={styles.choiceText}>
+                    Вибери квадратне фото з галереї.
+                  </Text>
                 </View>
                 <Camera color={questColors.ember} size={22} weight="bold" />
               </Pressable>
@@ -158,7 +227,12 @@ export function AvatarPickerModal({ onClose, onProfileChange, profile, visible }
             {message ? <Text style={styles.message}>{message}</Text> : null}
           </ScrollView>
 
-          <ChaosButton disabled={saving} label={saving ? 'Зберігаємо...' : 'Закрити'} onPress={close} variant="outline" />
+          <ChaosButton
+            disabled={saving}
+            label={saving ? "Зберігаємо..." : "Закрити"}
+            onPress={close}
+            variant="outline"
+          />
         </View>
       </View>
     </Modal>
@@ -167,8 +241,8 @@ export function AvatarPickerModal({ onClose, onProfileChange, profile, visible }
 
 const styles = StyleSheet.create({
   avatarImage: {
-    height: '100%',
-    width: '100%',
+    height: "100%",
+    width: "100%",
   },
   avatarOption: {
     aspectRatio: 1,
@@ -176,11 +250,11 @@ const styles = StyleSheet.create({
     borderColor: questColors.border,
     borderRadius: radii.pill,
     borderWidth: 2,
-    flexBasis: '18%',
+    flexBasis: "18%",
     flexGrow: 1,
     maxWidth: 72,
     minWidth: 58,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   avatarOptionSelected: {
     borderColor: questColors.acid,
@@ -202,11 +276,11 @@ const styles = StyleSheet.create({
     color: questColors.textPrimary,
   },
   close: {
-    alignItems: 'center',
+    alignItems: "center",
     backgroundColor: questColors.surfaceUp,
     borderRadius: radii.pill,
     height: 38,
-    justifyContent: 'center',
+    justifyContent: "center",
     width: 38,
   },
   content: {
@@ -214,32 +288,32 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xs,
   },
   customImage: {
-    height: '100%',
-    width: '100%',
+    height: "100%",
+    width: "100%",
   },
   customPreview: {
-    alignItems: 'center',
+    alignItems: "center",
     backgroundColor: questColors.surfaceUp,
     borderRadius: radii.pill,
     height: 46,
-    justifyContent: 'center',
-    overflow: 'hidden',
+    justifyContent: "center",
+    overflow: "hidden",
     width: 46,
   },
   emojiPreview: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(196,255,0,0.12)',
+    alignItems: "center",
+    backgroundColor: "rgba(196,255,0,0.12)",
     borderRadius: radii.pill,
     height: 46,
-    justifyContent: 'center',
+    justifyContent: "center",
     width: 46,
   },
   emojiText: {
     fontSize: 24,
   },
   generatedGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.sm,
   },
   message: {
@@ -247,9 +321,9 @@ const styles = StyleSheet.create({
     color: questColors.warning,
   },
   modalShade: {
-    backgroundColor: 'rgba(10,10,15,0.74)',
+    backgroundColor: "rgba(10,10,15,0.74)",
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
   },
   sheet: {
     backgroundColor: questColors.surface,
@@ -258,7 +332,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radii.xl,
     borderWidth: 1,
     gap: spacing.lg,
-    maxHeight: '88%',
+    maxHeight: "88%",
     padding: spacing.lg,
   },
   sheetText: {
@@ -270,10 +344,10 @@ const styles = StyleSheet.create({
     color: questColors.textPrimary,
   },
   sheetTop: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
+    alignItems: "flex-start",
+    flexDirection: "row",
     gap: spacing.md,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   titleBlock: {
     flex: 1,
@@ -281,12 +355,12 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   wideChoice: {
-    alignItems: 'center',
+    alignItems: "center",
     backgroundColor: questColors.surfaceUp,
     borderColor: questColors.border,
     borderRadius: radii.sm,
     borderWidth: 1,
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing.sm,
     padding: spacing.md,
   },
