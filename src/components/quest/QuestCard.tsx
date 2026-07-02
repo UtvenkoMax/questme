@@ -9,7 +9,7 @@ import {
   ShieldCheck,
   XCircle,
 } from 'phosphor-react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -28,20 +28,40 @@ import { SPRING_CONFIG } from '@/constants/animations';
 import { radii, spacing } from '@/constants/spacing';
 import { typography } from '@/constants/typography';
 import { type FeedQuest } from '@/data/questme';
+import { getQuestSocialSeed } from '@/data/social-features';
+import { useSocialStore } from '@/store/social-store';
 
 type QuestCardProps = {
   index: number;
   quest: FeedQuest;
+  onOpen?: (quest: FeedQuest) => void;
   onTake?: (quest: FeedQuest) => void;
 };
 
-export function QuestCard({ index, onTake, quest }: QuestCardProps) {
+export function QuestCard({ index, onOpen, onTake, quest }: QuestCardProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const translateX = useSharedValue(0);
+  const ensureQuestSocial = useSocialStore((state) => state.ensureQuestSocial);
+  const questSocial = useSocialStore((state) => state.questSocial[quest.id]);
+  const toggleLike = useSocialStore((state) => state.toggleLike);
+  const toggleSave = useSocialStore((state) => state.toggleSave);
+  const socialSeed = getQuestSocialSeed(quest.id, quest.title);
+  const liked = questSocial?.liked ?? false;
+  const saved = questSocial?.saved ?? false;
+  const addedComments = Math.max(0, (questSocial?.comments.length ?? socialSeed.comments.length) - socialSeed.comments.length);
+  const likes = quest.reactions.likes + (liked ? 1 : 0);
+  const comments = quest.reactions.comments + addedComments;
+
+  useEffect(() => {
+    ensureQuestSocial(quest.id, quest.title);
+  }, [ensureQuestSocial, quest.id, quest.title]);
 
   const commitSwipe = (direction: 'save' | 'skip') => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     setPreviewOpen(direction === 'save');
+    if (direction === 'save' && !saved) {
+      toggleSave(quest.id);
+    }
   };
 
   const pan = Gesture.Pan()
@@ -92,6 +112,7 @@ export function QuestCard({ index, onTake, quest }: QuestCardProps) {
 
         <Pressable
           accessibilityRole="button"
+          onPress={() => onOpen?.(quest)}
           onLongPress={() => setPreviewOpen((value) => !value)}
           style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
           <View style={styles.header}>
@@ -104,6 +125,12 @@ export function QuestCard({ index, onTake, quest }: QuestCardProps) {
           </View>
 
           <Text style={styles.title}>{quest.title}</Text>
+
+          <View style={styles.tagRow}>
+            {socialSeed.tags.map((tag) => (
+              <Text key={tag} style={styles.tag}>#{tag}</Text>
+            ))}
+          </View>
 
           <View style={styles.metaRow}>
             <View style={styles.meta}>
@@ -120,18 +147,25 @@ export function QuestCard({ index, onTake, quest }: QuestCardProps) {
           <ChaosButton label="Взяти квест" onPress={() => onTake?.(quest)} />
 
           <View style={styles.footer}>
-            <View style={styles.reactions}>
-              <Heart color={questColors.ember} size={18} weight="fill" />
-              <Text style={styles.footerText}>{quest.reactions.likes}</Text>
-            </View>
-            <View style={styles.reactions}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => toggleLike(quest.id, quest.reactions.likes)}
+              style={styles.reactions}>
+              <Heart color={liked ? questColors.ember : questColors.textSecondary} size={18} weight={liked ? 'fill' : 'regular'} />
+              <Text style={[styles.footerText, liked && styles.footerTextActive]}>{likes}</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => onOpen?.(quest)} style={styles.reactions}>
               <ChatCircle color={questColors.textSecondary} size={18} />
-              <Text style={styles.footerText}>{quest.reactions.comments}</Text>
-            </View>
+              <Text style={styles.footerText}>{comments}</Text>
+            </Pressable>
             <View style={styles.reactions}>
               <ShareFat color={questColors.textSecondary} size={18} />
               <Text style={styles.footerText}>share</Text>
             </View>
+            <Pressable accessibilityRole="button" onPress={() => toggleSave(quest.id)} style={styles.reactions}>
+              <BookmarkSimple color={saved ? questColors.acid : questColors.textSecondary} size={18} weight={saved ? 'fill' : 'regular'} />
+              <Text style={[styles.footerText, saved && styles.footerTextSaved]}>{saved ? 'saved' : 'save'}</Text>
+            </Pressable>
             <View style={styles.bubbles}>
               {quest.reactions.mood.map((reaction) => (
                 <Text key={reaction} style={styles.bubble}>{reaction}</Text>
@@ -189,6 +223,12 @@ const styles = StyleSheet.create({
   footerText: {
     ...typography.captionStrong,
     color: questColors.textSecondary,
+  },
+  footerTextActive: {
+    color: questColors.ember,
+  },
+  footerTextSaved: {
+    color: questColors.acid,
   },
   header: {
     alignItems: 'center',
@@ -269,6 +309,16 @@ const styles = StyleSheet.create({
   title: {
     ...typography.titleCompact,
     color: questColors.textPrimary,
+  },
+  tag: {
+    ...typography.eyebrow,
+    color: questColors.acid,
+    textTransform: 'uppercase',
+  },
+  tagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
   },
   wrap: {
     position: 'relative',

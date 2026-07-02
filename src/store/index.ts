@@ -27,6 +27,9 @@ export {
 } from './map-store';
 export type { MapStore } from './map-store';
 
+export { getProfileWithFollowState, useSocialStore } from './social-store';
+export type { SocialStore } from './social-store';
+
 export {
   PREMIUM_QUEST_PRICE,
   PLATFORM_COMMISSION_RATE,
