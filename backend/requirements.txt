@@ -1,8 +1,8 @@
 # Core
 fastapi==0.115.0
 uvicorn[standard]==0.32.0
-pydantic==2.10.0
-pydantic-settings==2.7.0
+pydantic==2.13.4
+pydantic-settings==2.14.2
 
 # Auth
 python-jose[cryptography]==3.3.0
@@ -16,8 +16,8 @@ httpx==0.28.0
 yt-dlp>=2025.1.0
 
 # ML (lightweight — no torch/tensorflow)
-scikit-learn==1.6.0
-numpy==2.2.0
+# Not needed by the current mock recommendations API.
+# Add scikit-learn/numpy back when real ML code imports them.
 
 # Optional — uncomment when connecting real DB/Redis:
 # sqlalchemy==2.0.36

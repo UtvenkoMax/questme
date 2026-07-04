@@ -115,7 +115,7 @@ export default function SecurityScreen() {
 
   const signOut = async () => {
     await logout();
-    router.replace('/login');
+    router.replace('/register');
   };
 
   const toggleInterest = async (interestId: InterestId) => {
@@ -265,7 +265,7 @@ export default function SecurityScreen() {
           subtitle="Керуйте сесією та даними, які збережені на цьому пристрої."
           title="Дані акаунта"
         />
-        <Button icon="log-out" onPress={signOut} title="Вийти з акаунта" variant="ghost" />
+        <Button icon="log-out" onPress={signOut} title="Вийти з акаунта" variant="danger" />
         <Button icon="trash-2" onPress={confirmDelete} title="Видалити локальні дані" variant="danger" />
       </Card>
     </Screen>
