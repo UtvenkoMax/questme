@@ -115,7 +115,7 @@ export default function SecurityScreen() {
 
   const signOut = async () => {
     await logout();
-    router.replace('/login');
+    router.replace('/register');
   };
 
   const toggleInterest = async (interestId: InterestId) => {

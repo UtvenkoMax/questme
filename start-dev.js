@@ -13,9 +13,21 @@
  * Missing runtimes are detected and skipped gracefully.
  */
 
-const { execSync, spawn } = require('child_process');
+const { execFileSync, spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+
+const isWin = process.platform === 'win32';
+const localStateDir = path.join(__dirname, '.questme');
+const goBinDir = path.join(localStateDir, 'bin');
+const goCacheDir = path.join(localStateDir, 'go-build-cache');
+const goTempDir = path.join(localStateDir, 'go-tmp');
+
+const GO_SERVICES = [
+  { label: 'realtime', dir: 'services/realtime', port: '8082' },
+  { label: 'geo', dir: 'services/geo', port: '8083' },
+  { label: 'media', dir: 'services/media', port: '8084' },
+];
 
 // ─── Colors ────────────────────────────────────────────
 
@@ -44,7 +56,7 @@ const LABELS = {
 
 function commandExists(cmd) {
   try {
-    execSync(`where ${cmd}`, { stdio: 'ignore' });
+    execFileSync(isWin ? 'where.exe' : 'which', [cmd], { stdio: 'ignore' });
     return true;
   } catch {
     return false;
@@ -53,7 +65,8 @@ function commandExists(cmd) {
 
 function getCommandVersion(cmd, flag = '--version') {
   try {
-    return execSync(`${cmd} ${flag}`, { encoding: 'utf-8' }).trim().split('\n')[0];
+    const args = Array.isArray(flag) ? flag : [flag];
+    return execFileSync(cmd, args, { encoding: 'utf-8' }).trim().split('\n')[0];
   } catch {
     return null;
   }
@@ -83,7 +96,6 @@ function detectRuntimes() {
 function ensurePythonVenv(pythonCmd) {
   const backendDir = path.join(__dirname, 'backend');
   const venvDir = path.join(backendDir, '.venv');
-  const isWin = process.platform === 'win32';
   const pip = isWin
     ? path.join(venvDir, 'Scripts', 'pip.exe')
     : path.join(venvDir, 'bin', 'pip');
@@ -93,7 +105,7 @@ function ensurePythonVenv(pythonCmd) {
 
   if (!fs.existsSync(pip)) {
     console.log(`${LABELS.system} Creating Python venv in backend/.venv ...`);
-    execSync(`${pythonCmd} -m venv "${venvDir}"`, { cwd: backendDir, stdio: 'inherit' });
+    execFileSync(pythonCmd, ['-m', 'venv', venvDir], { cwd: backendDir, stdio: 'inherit' });
   }
 
   // Install deps if requirements changed
@@ -104,11 +116,107 @@ function ensurePythonVenv(pythonCmd) {
 
   if (reqMtime > stampMtime) {
     console.log(`${LABELS.system} Installing Python dependencies...`);
-    execSync(`"${pip}" install -r requirements.txt`, { cwd: backendDir, stdio: 'inherit' });
+    execFileSync(pip, ['install', '-r', 'requirements.txt'], { cwd: backendDir, stdio: 'inherit' });
     fs.writeFileSync(stampFile, new Date().toISOString());
   }
 
   return pythonVenv;
+}
+
+function getExpoCliCommand() {
+  const localExpoCli = path.join(__dirname, 'node_modules', 'expo', 'bin', 'cli');
+
+  if (fs.existsSync(localExpoCli)) {
+    return { cmd: process.execPath, args: [localExpoCli] };
+  }
+
+  if (isWin) {
+    return { cmd: 'cmd.exe', args: ['/d', '/s', '/c', 'npx', 'expo'] };
+  }
+
+  return { cmd: 'npx', args: ['expo'] };
+}
+
+function getGoServiceBinaryPath(label) {
+  const exe = isWin ? '.exe' : '';
+  return path.join(goBinDir, `questme-${label}${exe}`);
+}
+
+function buildGoService(service) {
+  const fullDir = path.join(__dirname, service.dir);
+
+  if (!fs.existsSync(path.join(fullDir, 'main.go'))) {
+    return null;
+  }
+
+  fs.mkdirSync(goBinDir, { recursive: true });
+  fs.mkdirSync(goCacheDir, { recursive: true });
+  fs.mkdirSync(goTempDir, { recursive: true });
+
+  const binaryPath = getGoServiceBinaryPath(service.label);
+  console.log(`${LABELS.system} Building Go ${service.label} binary...`);
+  execFileSync('go', ['build', '-o', binaryPath, '.'], {
+    cwd: fullDir,
+    env: {
+      ...process.env,
+      GOCACHE: goCacheDir,
+      GOTMPDIR: goTempDir,
+    },
+    stdio: 'inherit',
+  });
+
+  return { binaryPath, fullDir };
+}
+
+function startGoService(service) {
+  const built = buildGoService(service);
+
+  if (!built) {
+    return false;
+  }
+
+  console.log(`${LABELS.system} Starting Go ${service.label} on :${service.port} ...`);
+  spawnService(service.label, built.binaryPath, [], built.fullDir);
+  return true;
+}
+
+function getRequestedGoServiceLabel() {
+  const flagIndex = process.argv.indexOf('--go-service');
+
+  if (flagIndex !== -1) {
+    return process.argv[flagIndex + 1] || null;
+  }
+
+  const inlineFlag = process.argv.find((arg) => arg.startsWith('--go-service='));
+  return inlineFlag ? inlineFlag.split('=')[1] : null;
+}
+
+function runSingleGoService(label) {
+  const service = GO_SERVICES.find((item) => item.label === label);
+
+  if (!service) {
+    console.log(`${LABELS.system} ${c.red}Unknown Go service: ${label}${c.reset}`);
+    console.log(`${LABELS.system} Available services: ${GO_SERVICES.map((item) => item.label).join(', ')}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const runtimes = detectRuntimes();
+
+  if (!runtimes.go.available) {
+    console.log(`${LABELS.system} ${c.red}Go not found - ${label} cannot start${c.reset}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  try {
+    console.log(`${LABELS.system} Go ${c.dim}${runtimes.go.version || ''}${c.reset}`);
+    startGoService(service);
+    console.log(`\n${LABELS.system} Press ${c.bright}Ctrl+C${c.reset} to stop ${label}\n`);
+  } catch (err) {
+    console.log(`${LABELS[service.label]} ${c.red}Failed to build/start: ${err.message}${c.reset}`);
+    process.exitCode = 1;
+  }
 }
 
 // ─── Process Spawning ──────────────────────────────────
@@ -119,7 +227,6 @@ function spawnService(label, cmd, args, cwd, env = {}) {
   const child = spawn(cmd, args, {
     cwd,
     env: { ...process.env, ...env },
-    shell: true,
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 
@@ -175,6 +282,13 @@ process.on('exit', () => {
 // ─── Main ──────────────────────────────────────────────
 
 function main() {
+  const requestedGoService = getRequestedGoServiceLabel();
+
+  if (requestedGoService) {
+    runSingleGoService(requestedGoService);
+    return;
+  }
+
   console.log(`\n${c.bright}╔══════════════════════════════════════╗${c.reset}`);
   console.log(`${c.bright}║     🗺️  QuestMe — Dev Environment     ║${c.reset}`);
   console.log(`${c.bright}╚══════════════════════════════════════╝${c.reset}\n`);
@@ -191,7 +305,8 @@ function main() {
 
   // 1. Always start Expo (required)
   console.log(`${LABELS.system} Starting Expo dev server on LAN...`);
-  spawnService('expo', 'npx', ['expo', 'start', '--lan'], __dirname);
+  const expoCli = getExpoCliCommand();
+  spawnService('expo', expoCli.cmd, [...expoCli.args, 'start', '--lan'], __dirname);
 
   // 2. Python FastAPI backend
   if (runtimes.python.available) {
@@ -200,7 +315,7 @@ function main() {
       console.log(`${LABELS.system} Starting FastAPI backend on :8000 ...`);
       spawnService(
         'api',
-        `"${pythonBin}"`,
+        pythonBin,
         ['-m', 'uvicorn', 'app.main:app', '--host', '0.0.0.0', '--port', '8000', '--reload'],
         path.join(__dirname, 'backend')
       );
@@ -214,17 +329,11 @@ function main() {
 
   // 3. Go microservices
   if (runtimes.go.available) {
-    const goServices = [
-      { label: 'realtime', dir: 'services/realtime', port: '8082' },
-      { label: 'geo', dir: 'services/geo', port: '8083' },
-      { label: 'media', dir: 'services/media', port: '8084' },
-    ];
-
-    goServices.forEach(({ label, dir, port }) => {
-      const fullDir = path.join(__dirname, dir);
-      if (fs.existsSync(path.join(fullDir, 'main.go'))) {
-        console.log(`${LABELS.system} Starting Go ${label} on :${port} ...`);
-        spawnService(label, 'go', ['run', 'main.go'], fullDir);
+    GO_SERVICES.forEach((service) => {
+      try {
+        startGoService(service);
+      } catch (err) {
+        console.log(`${LABELS[service.label]} ${c.red}Failed to build/start: ${err.message}${c.reset}`);
       }
     });
   } else {
