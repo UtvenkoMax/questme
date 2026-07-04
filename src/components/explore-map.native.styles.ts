@@ -35,6 +35,36 @@ export const styles = StyleSheet.create({
     right: spacing.lg,
     top: 54,
   },
+  filterRail: {
+    left: spacing.lg,
+    position: 'absolute',
+    right: spacing.lg,
+    top: 188,
+  },
+  filterContent: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingRight: spacing.lg,
+  },
+  filterChip: {
+    backgroundColor: 'rgba(255, 255, 255, 0.96)',
+    borderColor: colors.border,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  filterChipActive: {
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.primary,
+  },
+  filterText: {
+    ...typography.captionStrong,
+    color: colors.inkMuted,
+  },
+  filterTextActive: {
+    color: colors.primary,
+  },
   statusIcon: {
     alignItems: 'center',
     backgroundColor: colors.primarySoft,

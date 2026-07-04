@@ -13,11 +13,14 @@ import { useWalletStore, selectFormattedBalance } from '@/store';
 
 const QUICK_AMOUNTS = [50, 100, 250, 500, 1000];
 
-type PaymentMethod = 'monobank' | 'privatbank' | 'card';
+type PaymentMethod = 'monobank' | 'privatbank' | 'stripe' | 'applePay' | 'googlePay' | 'card';
 
 const PAYMENT_METHODS: { id: PaymentMethod; label: string; subtitle: string; icon: typeof CreditCard }[] = [
   { id: 'monobank', label: 'Monobank', subtitle: 'Миттєве поповнення', icon: Lightning },
   { id: 'privatbank', label: 'PrivatBank', subtitle: 'Переказ через API', icon: Bank },
+  { id: 'stripe', label: 'Stripe', subtitle: 'PaymentIntent sandbox', icon: CreditCard },
+  { id: 'applePay', label: 'Apple Pay', subtitle: 'Через Stripe merchant', icon: Lightning },
+  { id: 'googlePay', label: 'Google Pay', subtitle: 'Через Stripe gateway', icon: Lightning },
   { id: 'card', label: 'Visa / Mastercard', subtitle: 'Будь-яка картка', icon: CreditCard },
 ];
 

@@ -1,12 +1,15 @@
 import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
 import { Shuffle } from 'phosphor-react-native';
 import { useMemo, useRef, useState } from 'react';
 import {
   Animated,
   FlatList,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 
@@ -20,10 +23,23 @@ import { questColors } from '@/constants/colors';
 import { radii, spacing } from '@/constants/spacing';
 import { typography } from '@/constants/typography';
 import { questOfDay, type FeedQuest } from '@/data/questme';
+import type { QuestFeedFilter } from '@/data/social-features';
 import { useQuestFeed } from '@/hooks/useQuestFeed';
 
 export default function FeedScreen() {
-  const { quests, refresh, refreshing, selectedCategory, setSelectedCategory } = useQuestFeed();
+  const router = useRouter();
+  const {
+    feedFilters,
+    quests,
+    refresh,
+    refreshing,
+    searchQuery,
+    selectedCategory,
+    selectedFilter,
+    setSearchQuery,
+    setSelectedCategory,
+    setSelectedFilter,
+  } = useQuestFeed();
   const [message, setMessage] = useState('');
   const spin = useRef(new Animated.Value(0)).current;
 
@@ -58,6 +74,10 @@ export default function FeedScreen() {
     if (!randomQuest) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
     setMessage(`Рулетка вибрала: ${randomQuest.title}`);
+  };
+
+  const openQuest = (quest: FeedQuest) => {
+    router.push({ pathname: '/quest/[id]', params: { id: quest.id } });
   };
 
   return (
@@ -96,7 +116,29 @@ export default function FeedScreen() {
               title="Обери свій рівень хаосу"
             />
             <CategoryFilter selected={selectedCategory} onSelect={setSelectedCategory} />
+            <TextInput
+              autoCapitalize="none"
+              onChangeText={setSearchQuery}
+              placeholder="Пошук за назвою, містом, категорією"
+              placeholderTextColor={questColors.textSecondary}
+              selectionColor={questColors.acid}
+              style={styles.searchInput}
+              value={searchQuery}
+            />
+            <FeedFilterRail
+              filters={feedFilters}
+              onSelect={setSelectedFilter}
+              selected={selectedFilter}
+            />
             {message ? <Notice tone="success">{message}</Notice> : null}
+          </View>
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>Немає квестів за цими фільтрами</Text>
+            <Text style={styles.emptyText}>
+              Змініть категорію, пошук або відкрийте збережені після свайпу чи кнопки bookmark.
+            </Text>
           </View>
         }
         contentContainerStyle={styles.listContent}
@@ -111,10 +153,40 @@ export default function FeedScreen() {
             tintColor={questColors.acid}
           />
         }
-        renderItem={({ index, item }) => <QuestCard index={index} quest={item} onTake={takeQuest} />}
+        renderItem={({ index, item }) => (
+          <QuestCard index={index} quest={item} onOpen={openQuest} onTake={takeQuest} />
+        )}
         showsVerticalScrollIndicator={false}
       />
     </Screen>
+  );
+}
+
+function FeedFilterRail({
+  filters,
+  onSelect,
+  selected,
+}: {
+  filters: { id: QuestFeedFilter; label: string }[];
+  onSelect: (id: QuestFeedFilter) => void;
+  selected: QuestFeedFilter;
+}) {
+  return (
+    <View style={styles.filterRow}>
+      {filters.map((filter) => {
+        const active = filter.id === selected;
+
+        return (
+          <Pressable
+            accessibilityRole="button"
+            key={filter.id}
+            onPress={() => onSelect(filter.id)}
+            style={({ pressed }) => [styles.filterChip, active && styles.filterChipActive, pressed && styles.pressed]}>
+            <Text style={[styles.filterText, active && styles.filterTextActive]}>{filter.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
@@ -173,6 +245,46 @@ const styles = StyleSheet.create({
   header: {
     gap: spacing.lg,
   },
+  emptyCard: {
+    backgroundColor: questColors.surface,
+    borderColor: questColors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    gap: spacing.xs,
+    padding: spacing.lg,
+  },
+  emptyText: {
+    ...typography.caption,
+    color: questColors.textSecondary,
+  },
+  emptyTitle: {
+    ...typography.subtitle,
+    color: questColors.textPrimary,
+  },
+  filterChip: {
+    backgroundColor: questColors.surface,
+    borderColor: questColors.border,
+    borderRadius: radii.xs,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  filterChipActive: {
+    backgroundColor: 'rgba(196,255,0,0.14)',
+    borderColor: 'rgba(196,255,0,0.44)',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  filterText: {
+    ...typography.label,
+    color: questColors.textSecondary,
+  },
+  filterTextActive: {
+    color: questColors.acid,
+  },
   heroTop: {
     alignItems: 'flex-start',
     flexDirection: 'row',
@@ -202,9 +314,22 @@ const styles = StyleSheet.create({
     ...typography.label,
     color: questColors.textPrimary,
   },
+  pressed: {
+    opacity: 0.72,
+  },
   screenContent: {
     flex: 1,
     paddingBottom: 0,
+  },
+  searchInput: {
+    ...typography.body,
+    backgroundColor: questColors.surface,
+    borderColor: questColors.border,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    color: questColors.textPrimary,
+    minHeight: 52,
+    paddingHorizontal: spacing.md,
   },
   statsRow: {
     flexDirection: 'row',

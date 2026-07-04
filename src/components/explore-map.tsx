@@ -1,11 +1,13 @@
 import { Feather } from '@expo/vector-icons';
-import { StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { MOCK_QUESTS } from '@/components/home/quest.types';
 import { Card } from '@/components/ui/card';
 import { PageHeader, ProgressBar } from '@/components/ui/layout';
 import { Screen } from '@/components/ui/screen';
 import { EmptyState, Notice } from '@/components/ui/status';
+import { mapFilters, type MapQuestFilter } from '@/data/social-features';
 import { colors, radii, spacing, typography } from '@/theme';
 
 const MARKERS = [
@@ -15,6 +17,13 @@ const MARKERS = [
 ] as const;
 
 export function ExploreMap() {
+  const [selectedFilter, setSelectedFilter] = useState<MapQuestFilter>('all');
+  const [checkedInIds, setCheckedInIds] = useState<Record<string, boolean>>({});
+  const visibleQuests = useMemo(
+    () => MOCK_QUESTS.filter((quest) => matchesMapFilter(quest, selectedFilter)),
+    [selectedFilter]
+  );
+
   return (
     <Screen contentStyle={styles.content} wide>
       <PageHeader
@@ -23,11 +32,26 @@ export function ExploreMap() {
         title="Маршрути поруч"
       />
 
+      <View style={styles.filterRow}>
+        {mapFilters.map((filter) => {
+          const active = filter.id === selectedFilter;
+          return (
+            <Pressable
+              accessibilityRole="button"
+              key={filter.id}
+              onPress={() => setSelectedFilter(filter.id)}
+              style={({ pressed }) => [styles.filterChip, active && styles.filterChipActive, pressed && styles.pressed]}>
+              <Text style={[styles.filterText, active && styles.filterTextActive]}>{filter.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
       <View style={styles.mapPreview}>
         <View style={styles.gridLineOne} />
         <View style={styles.gridLineTwo} />
         <View style={styles.routePreview} />
-        {MARKERS.map((marker) => (
+        {MARKERS.slice(0, visibleQuests.length).map((marker) => (
           <View key={`${marker.left}-${marker.top}`} style={[styles.marker, marker]}>
             <Feather color={colors.white} name="map-pin" size={15} />
           </View>
@@ -40,11 +64,11 @@ export function ExploreMap() {
             <Feather color={colors.primary} name="map-pin" size={18} />
           </View>
           <View style={styles.pointCopy}>
-            <Text style={styles.pointTitle}>{MOCK_QUESTS[0]?.title ?? 'Квест поруч'}</Text>
-            <Text style={styles.pointMeta}>Bottom sheet preview · swipe на native · geofence ready</Text>
+            <Text style={styles.pointTitle}>{visibleQuests[0]?.title ?? 'Квест поруч'}</Text>
+            <Text style={styles.pointMeta}>Фільтр: {mapFilters.find((filter) => filter.id === selectedFilter)?.label}</Text>
           </View>
         </View>
-        <ProgressBar percent={33} />
+        <ProgressBar percent={visibleQuests.length ? 33 : 0} />
       </Card>
 
       <Notice tone="info">
@@ -52,8 +76,8 @@ export function ExploreMap() {
       </Notice>
 
       <View style={styles.pointList}>
-        {MOCK_QUESTS.length ? (
-          MOCK_QUESTS.map((quest) => (
+        {visibleQuests.length ? (
+          visibleQuests.map((quest) => (
             <Card key={quest.id} style={styles.pointRow}>
               <View style={styles.pointIcon}>
                 <Feather color={colors.primary} name="compass" size={18} />
@@ -66,7 +90,17 @@ export function ExploreMap() {
                   {quest.location} · {quest.distance} · {quest.route.length} точки
                 </Text>
               </View>
-              <Text style={styles.pointDuration}>{quest.duration}</Text>
+              <View style={styles.pointActions}>
+                <Text style={styles.pointDuration}>{quest.duration}</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setCheckedInIds((state) => ({ ...state, [quest.id]: true }))}
+                  style={[styles.checkInButton, checkedInIds[quest.id] && styles.checkInButtonDone]}>
+                  <Text style={[styles.checkInText, checkedInIds[quest.id] && styles.checkInTextDone]}>
+                    {checkedInIds[quest.id] ? 'check-in' : 'старт'}
+                  </Text>
+                </Pressable>
+              </View>
             </Card>
           ))
         ) : (
@@ -81,9 +115,63 @@ export function ExploreMap() {
   );
 }
 
+function matchesMapFilter(quest: (typeof MOCK_QUESTS)[number], filter: MapQuestFilter) {
+  if (filter === 'all') return true;
+  if (filter === 'nearby') return true;
+  if (filter === 'online') return false;
+  if (filter === 'highReward') return quest.reward.xp >= 150;
+  if (filter === 'new') return quest.isNew;
+  return true;
+}
+
 const styles = StyleSheet.create({
   content: {
     gap: spacing.xxl,
+  },
+  checkInButton: {
+    alignItems: 'center',
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.border,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  checkInButtonDone: {
+    backgroundColor: colors.successSoft,
+    borderColor: colors.success,
+  },
+  checkInText: {
+    ...typography.eyebrow,
+    color: colors.primary,
+    textTransform: 'uppercase',
+  },
+  checkInTextDone: {
+    color: colors.success,
+  },
+  filterChip: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  filterChipActive: {
+    backgroundColor: colors.accentSoft,
+    borderColor: colors.accent,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  filterText: {
+    ...typography.captionStrong,
+    color: colors.inkMuted,
+  },
+  filterTextActive: {
+    color: colors.accent,
   },
   mapPreview: {
     backgroundColor: colors.canvasParchment,
@@ -170,6 +258,13 @@ const styles = StyleSheet.create({
   pointDuration: {
     ...typography.captionStrong,
     color: colors.primary,
+  },
+  pointActions: {
+    alignItems: 'flex-end',
+    gap: spacing.xs,
+  },
+  pressed: {
+    opacity: 0.72,
   },
   sheetHeader: {
     alignItems: 'center',

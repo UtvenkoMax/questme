@@ -10,6 +10,7 @@ import { radii, spacing } from '@/constants/spacing';
 import { typography } from '@/constants/typography';
 import type { TrackerQuest } from '@/data/questme';
 import { uploadProofMedia } from '@/services/proof-upload.service';
+import { usePlatformStore } from '@/store';
 
 const MAX_PROOF_ASSETS = 4;
 const MAX_PROOF_FILE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -23,13 +24,16 @@ type SubmitProofModalProps = {
 
 export function SubmitProofModal({ onClose, quest }: SubmitProofModalProps) {
   const [assets, setAssets] = useState<ImagePicker.ImagePickerAsset[]>([]);
+  const submitProofForReview = usePlatformStore((state) => state.submitProofForReview);
   const [message, setMessage] = useState('');
+  const [reviewMessage, setReviewMessage] = useState('');
   const [status, setStatus] = useState<SubmitStatus>('idle');
   const canSubmit = assets.length > 0 && status !== 'uploading';
 
   useEffect(() => {
     setAssets([]);
     setMessage('');
+    setReviewMessage('');
     setStatus('idle');
   }, [quest?.id]);
 
@@ -121,7 +125,15 @@ export function SubmitProofModal({ onClose, quest }: SubmitProofModalProps) {
 
     try {
       await uploadProofMedia({ assets, questId: quest.id });
+      const submission = submitProofForReview({
+        mediaTypes: Array.from(new Set(assets.map((asset) => asset.type ?? 'unknown'))),
+        questId: quest.id,
+        questTitle: quest.title,
+      });
       setStatus('uploaded');
+      setReviewMessage(
+        `Auto-check ${submission.autoScore}/100: ${submission.status === 'needs_author' ? 'передано автору' : 'потрібна додаткова ручна перевірка'}.`
+      );
       setMessage('Доказ відправлено на перевірку. Автор зможе підтвердити виконання.');
       setTimeout(onClose, 900);
     } catch (error) {
@@ -182,6 +194,13 @@ export function SubmitProofModal({ onClose, quest }: SubmitProofModalProps) {
               <View style={[styles.feedback, status === 'uploaded' && styles.successFeedback]}>
                 <WarningCircle color={status === 'uploaded' ? questColors.success : questColors.warning} size={18} weight="bold" />
                 <Text style={styles.feedbackText}>{message}</Text>
+              </View>
+            ) : null}
+
+            {reviewMessage ? (
+              <View style={styles.reviewBox}>
+                <Text style={styles.reviewTitle}>Автоматична перевірка</Text>
+                <Text style={styles.reviewText}>{reviewMessage}</Text>
               </View>
             ) : null}
           </ScrollView>
@@ -339,6 +358,22 @@ const styles = StyleSheet.create({
     height: 36,
     justifyContent: 'center',
     width: 36,
+  },
+  reviewBox: {
+    backgroundColor: 'rgba(124, 58, 255, 0.14)',
+    borderColor: 'rgba(124, 58, 255, 0.36)',
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    gap: spacing.xs,
+    padding: spacing.md,
+  },
+  reviewText: {
+    ...typography.caption,
+    color: questColors.textSecondary,
+  },
+  reviewTitle: {
+    ...typography.captionStrong,
+    color: questColors.acid,
   },
   sheet: {
     backgroundColor: questColors.surface,

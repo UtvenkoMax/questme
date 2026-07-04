@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { PageHeader, SectionHeader } from '@/components/ui/layout';
 import { Screen } from '@/components/ui/screen';
 import { LoadingState, Notice } from '@/components/ui/status';
+import { keychains } from '@/data/platform-features';
 import {
   deleteLocalAccountData,
   getAuthSession,
@@ -20,6 +21,7 @@ import {
   type UserProfile,
 } from '@/services/auth-service';
 import { INTEREST_OPTIONS, type InterestId, type LanguagePreference, type ThemePreference } from '@/services/preferences-service';
+import { usePlatformStore } from '@/store';
 import { styles } from '@/styles/security.styles';
 
 const THEME_OPTIONS: { label: string; value: ThemePreference }[] = [
@@ -37,6 +39,10 @@ const LANGUAGE_OPTIONS: { label: string; value: LanguagePreference }[] = [
 export default function SecurityScreen() {
   const router = useRouter();
   const { preferences, updatePreferences } = useAppPreferences();
+  const dailySpinDate = usePlatformStore((state) => state.dailySpinDate);
+  const inventory = usePlatformStore((state) => state.keychainInventory);
+  const spinTokens = usePlatformStore((state) => state.spinTokens);
+  const spinKeychainRoulette = usePlatformStore((state) => state.spinKeychainRoulette);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [biometricEnabled, setBiometricEnabledState] = useState(false);
   const [message, setMessage] = useState<{ text: string; tone: 'success' | 'danger' | 'neutral' } | null>(null);
@@ -118,6 +124,11 @@ export default function SecurityScreen() {
       : [...preferences.interests, interestId];
 
     await updatePreferences({ interests: interests.length ? interests : [interestId] });
+  };
+
+  const spinKeychain = (source: 'daily' | 'mission') => {
+    const result = spinKeychainRoulette(source);
+    setMessage({ text: result.message, tone: result.ok ? 'success' : 'neutral' });
   };
 
   const confirmDelete = () => {
@@ -213,6 +224,39 @@ export default function SecurityScreen() {
               );
             })}
           </View>
+        </View>
+      </Card>
+
+      <Card style={styles.card}>
+        <SectionHeader
+          subtitle="Косметична колекція без платних spinів: 1 daily або токени за місії."
+          title="Рулетка брелків"
+        />
+        <View style={styles.rouletteStats}>
+          <Text style={styles.actionDescription}>
+            Зібрано брелків: {Object.values(inventory).reduce((sum, count) => sum + count, 0)} · spin-токени: {spinTokens}
+          </Text>
+          <Text style={styles.actionDescription}>
+            Доступні: {keychains.map((keychain) => keychain.label).join(', ')}
+          </Text>
+        </View>
+        <View style={styles.rouletteActions}>
+          <Button
+            disabled={dailySpinDate === new Date().toISOString().slice(0, 10)}
+            fullWidth={false}
+            icon="refresh-cw"
+            onPress={() => spinKeychain('daily')}
+            title="Daily spin"
+            variant="secondary"
+          />
+          <Button
+            disabled={spinTokens <= 0}
+            fullWidth={false}
+            icon="disc"
+            onPress={() => spinKeychain('mission')}
+            title={`Mission spin (${spinTokens})`}
+            variant="secondary"
+          />
         </View>
       </Card>
 
