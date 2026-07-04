@@ -88,4 +88,17 @@ export const styles = StyleSheet.create({
   segmentTextSelected: {
     color: colors.white,
   },
+  rouletteActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  rouletteStats: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: spacing.xs,
+    padding: spacing.md,
+  },
 });

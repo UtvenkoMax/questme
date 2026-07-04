@@ -541,7 +541,17 @@ export async function isOnboardingSeen() {
 }
 
 export async function logout() {
-  await deleteStorageItems([STORAGE_KEYS.authSession]);
+  await deleteStorageItems([
+    STORAGE_KEYS.authSession,
+    STORAGE_KEYS.biometricEnabled,
+    STORAGE_KEYS.faceIdEnabled,
+    STORAGE_KEYS.pendingRegistration,
+    STORAGE_KEYS.pin,
+    STORAGE_KEYS.pinAttempts,
+    STORAGE_KEYS.pinLockedUntil,
+    STORAGE_KEYS.profile,
+    STORAGE_KEYS.recoveryCode,
+  ]);
 }
 
 export async function deleteLocalAccountData() {

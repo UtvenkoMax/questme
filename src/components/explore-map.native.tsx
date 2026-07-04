@@ -3,12 +3,13 @@ import { BlurView } from 'expo-blur';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Animated, Easing, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import MapView, { Circle, Marker, Polyline, PROVIDER_DEFAULT, type Region } from 'react-native-maps';
 
 import { MOCK_QUESTS, type Quest, type QuestCoordinate } from '@/components/home/quest.types';
 import { Button } from '@/components/ui/button';
 import { ProgressBar } from '@/components/ui/layout';
+import { mapFilters, type MapQuestFilter } from '@/data/social-features';
 import { getJsonItem, setJsonItem } from '@/services/app-storage';
 import { colors } from '@/theme';
 import { styles } from './explore-map.native.styles';
@@ -55,6 +56,15 @@ function formatDistance(distanceMeters: number | null) {
   return `${(distanceMeters / 1000).toFixed(1)} км`;
 }
 
+function matchesMapFilter(marker: QuestMarker, filter: MapQuestFilter) {
+  if (filter === 'all') return true;
+  if (filter === 'nearby') return marker.distanceMeters == null || marker.distanceMeters <= NEARBY_RADIUS_METERS;
+  if (filter === 'online') return false;
+  if (filter === 'highReward') return marker.quest.reward.xp >= 150;
+  if (filter === 'new') return marker.quest.isNew;
+  return true;
+}
+
 function createQuestMarkers(userCoordinate: QuestCoordinate) {
   return [...MOCK_QUESTS]
     .map((quest) => ({
@@ -85,17 +95,24 @@ export function ExploreMap() {
     MOCK_QUESTS.map((quest) => ({ distanceMeters: null, quest }))
   );
   const [selectedQuestId, setSelectedQuestId] = useState(MOCK_QUESTS[0]?.id ?? '');
+  const [selectedFilter, setSelectedFilter] = useState<MapQuestFilter>('all');
+  const [manualCheckIns, setManualCheckIns] = useState<Record<string, boolean>>({});
   const [statusMessage, setStatusMessage] = useState('Шукаємо вашу локацію...');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const filteredQuestMarkers = useMemo(
+    () => questMarkers.filter((marker) => matchesMapFilter(marker, selectedFilter)),
+    [questMarkers, selectedFilter]
+  );
   const selectedMarker = useMemo(
-    () => questMarkers.find((marker) => marker.quest.id === selectedQuestId) ?? questMarkers[0],
-    [questMarkers, selectedQuestId]
+    () => filteredQuestMarkers.find((marker) => marker.quest.id === selectedQuestId) ?? filteredQuestMarkers[0],
+    [filteredQuestMarkers, selectedQuestId]
   );
   const geofenceDistance = userCoordinate && selectedMarker ? getDistanceMeters(userCoordinate, selectedMarker.quest.coordinate) : null;
   const isInsideGeofence =
     selectedMarker && geofenceDistance != null && geofenceDistance <= selectedMarker.quest.geofenceRadiusMeters;
+  const checkInConfirmed = Boolean(selectedMarker && (manualCheckIns[selectedMarker.quest.id] || isInsideGeofence));
   const selectedIndex = Math.max(
-    questMarkers.findIndex((marker) => marker.quest.id === selectedMarker?.quest.id),
+    filteredQuestMarkers.findIndex((marker) => marker.quest.id === selectedMarker?.quest.id),
     0
   );
 
@@ -103,10 +120,10 @@ export function ExploreMap() {
     Animated.timing(successProgress, {
       duration: 420,
       easing: Easing.out(Easing.cubic),
-      toValue: isInsideGeofence ? 1 : 0,
+      toValue: checkInConfirmed ? 1 : 0,
       useNativeDriver: true,
     }).start();
-  }, [isInsideGeofence, successProgress]);
+  }, [checkInConfirmed, successProgress]);
 
   useEffect(() => {
     let isMounted = true;
@@ -185,7 +202,7 @@ export function ExploreMap() {
   }, []);
 
   const selectSheetQuest = (index: number) => {
-    const marker = questMarkers[index];
+    const marker = filteredQuestMarkers[index];
     if (!marker) return;
 
     setSelectedQuestId(marker.quest.id);
@@ -193,6 +210,10 @@ export function ExploreMap() {
   };
 
   const startSelectedQuest = () => {
+    if (selectedMarker) {
+      setManualCheckIns((state) => ({ ...state, [selectedMarker.quest.id]: true }));
+      setStatusMessage('Check-in збережено для активного квесту');
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
   };
 
@@ -205,7 +226,7 @@ export function ExploreMap() {
         showsMyLocationButton={hasUserLocation}
         showsUserLocation={hasUserLocation}
         style={styles.map}>
-        {questMarkers.map(({ distanceMeters, quest }) => (
+        {filteredQuestMarkers.map(({ distanceMeters, quest }) => (
           <Marker
             coordinate={quest.coordinate}
             description={`${quest.description} · ${formatDistance(distanceMeters)}`}
@@ -246,13 +267,32 @@ export function ExploreMap() {
               : 'Квестів для показу поки немає.'}
           </Text>
           {selectedMarker ? (
-            <Text style={isInsideGeofence ? styles.geofenceSuccess : styles.statusText}>
-              {isInsideGeofence
+            <Text style={checkInConfirmed ? styles.geofenceSuccess : styles.statusText}>
+              {checkInConfirmed
                 ? 'Геофенс підтверджено: ви дійшли до точки квесту.'
                 : `Геофенс активний у радіусі ${selectedMarker.quest.geofenceRadiusMeters} м.`}
             </Text>
           ) : null}
         </View>
+      </View>
+
+      <View style={styles.filterRail}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.filterContent}>
+            {mapFilters.map((filter) => {
+              const active = filter.id === selectedFilter;
+              return (
+                <Pressable
+                  accessibilityRole="button"
+                  key={filter.id}
+                  onPress={() => setSelectedFilter(filter.id)}
+                  style={[styles.filterChip, active && styles.filterChipActive]}>
+                  <Text style={[styles.filterText, active && styles.filterTextActive]}>{filter.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </ScrollView>
       </View>
 
       <BlurView intensity={70} tint="light" style={styles.bottomSheet}>
@@ -267,7 +307,7 @@ export function ExploreMap() {
           showsHorizontalScrollIndicator={false}
           snapToInterval={Math.max(width - 56, 280)}
           decelerationRate="fast">
-          {questMarkers.map(({ distanceMeters, quest }, index) => {
+          {filteredQuestMarkers.length ? filteredQuestMarkers.map(({ distanceMeters, quest }, index) => {
             const selected = index === selectedIndex;
             const routePercent = selected ? 33 : 0;
 
@@ -286,12 +326,23 @@ export function ExploreMap() {
                 </View>
                 <ProgressBar percent={routePercent} />
                 <View style={styles.sheetActions}>
-                  <Button fullWidth={false} icon="play" onPress={startSelectedQuest} size="sm" title="Почати" />
+                  <Button
+                    fullWidth={false}
+                    icon="play"
+                    onPress={startSelectedQuest}
+                    size="sm"
+                    title={manualCheckIns[quest.id] ? 'Check-in' : 'Почати'}
+                  />
                   <Button fullWidth={false} icon="info" onPress={() => setSelectedQuestId(quest.id)} size="sm" title="На мапі" variant="secondary" />
                 </View>
               </View>
             );
-          })}
+          }) : (
+            <View style={[styles.sheetCard, { width: Math.max(width - 56, 280) }]}>
+              <Text style={styles.sheetTitle}>Немає квестів за фільтром</Text>
+              <Text style={styles.sheetMeta}>Спробуйте інший фільтр карти або відкрийте онлайн-квести у Feed.</Text>
+            </View>
+          )}
         </ScrollView>
       </BlurView>
 
