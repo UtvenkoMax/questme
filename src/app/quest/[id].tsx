@@ -21,7 +21,9 @@ import {
   questNotifications,
   type QuestTeamMember,
 } from '@/data/social-features';
+import { reportReasons } from '@/data/platform-features';
 import { getProfileWithFollowState, useSocialStore } from '@/store/social-store';
+import { usePlatformStore, type ProofSubmission } from '@/store';
 
 type IconName = ComponentProps<typeof Feather>['name'];
 
@@ -47,6 +49,13 @@ export default function QuestDetailsScreen() {
   const completeCheckIn = useSocialStore((state) => state.completeCheckIn);
   const joinTeam = useSocialStore((state) => state.joinTeam);
   const toggleFollow = useSocialStore((state) => state.toggleFollow);
+  const proofSubmissions = usePlatformStore((state) => state.proofSubmissions);
+  const disputes = usePlatformStore((state) => state.disputes);
+  const reports = usePlatformStore((state) => state.reports);
+  const approveProof = usePlatformStore((state) => state.approveProof);
+  const rejectProof = usePlatformStore((state) => state.rejectProof);
+  const createDispute = usePlatformStore((state) => state.createDispute);
+  const createReport = usePlatformStore((state) => state.createReport);
   const [commentText, setCommentText] = useState('');
   const [chatText, setChatText] = useState('');
   const [message, setMessage] = useState('');
@@ -91,6 +100,9 @@ export default function QuestDetailsScreen() {
   const recommendations = seed.recommendations
     .map((recommendationId) => allFeedQuests.find((quest) => quest.id === recommendationId))
     .filter(Boolean);
+  const questProofs = proofSubmissions.filter((proof) => proof.questId === questId);
+  const questReports = reports.filter((report) => report.targetId === questId || report.targetId === seed.authorId);
+  const questDisputes = disputes.filter((dispute) => questProofs.some((proof) => proof.id === dispute.proofId));
 
   const submitComment = () => {
     if (!commentText.trim()) return;
@@ -118,6 +130,12 @@ export default function QuestDetailsScreen() {
     joinTeam(questId);
     setMessage('Ви в команді цього квесту');
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+  };
+
+  const reportTarget = (targetType: 'quest' | 'user' | 'proof', targetId: string, reasonId: string) => {
+    createReport(targetType, targetId, reasonId);
+    setMessage('Скаргу відправлено на модерацію');
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
   };
 
   return (
@@ -185,6 +203,63 @@ export default function QuestDetailsScreen() {
           />
         </FeatureCard>
       </View>
+
+      <FeatureCard icon="flag" title="Скарги та модерація">
+        <Text style={styles.bodyText}>
+          Можна поскаржитись на квест, автора або конкретний proof. Нові скарги потрапляють у triage-чергу.
+        </Text>
+        <View style={styles.reportGrid}>
+          {reportReasons.slice(0, 4).map((reason) => (
+            <ReportButton
+              key={reason.id}
+              label={reason.label}
+              onPress={() => reportTarget('quest', questId, reason.id)}
+            />
+          ))}
+        </View>
+        <ChaosButton
+          label={`Поскаржитись на автора ${profile.username}`}
+          onPress={() => reportTarget('user', seed.authorId, 'harassment')}
+          variant="outline"
+        />
+        <Text style={styles.bodyText}>Активних скарг у цьому контексті: {questReports.length}</Text>
+      </FeatureCard>
+
+      <FeatureCard icon="check-circle" title="Proof review">
+        {questProofs.length ? (
+          <View style={styles.messageList}>
+            {questProofs.map((proof) => (
+              <ProofReviewRow
+                key={proof.id}
+                proof={proof}
+                onApprove={() => {
+                  approveProof(proof.id);
+                  setMessage('Доказ підтверджено автором');
+                }}
+                onDispute={() => {
+                  createDispute(proof.id, proof.escrowId ?? 'escrow-demo', 'Автор не приймає виконання');
+                  setMessage('Escrow-диспут відкрито');
+                }}
+                onReject={() => {
+                  rejectProof(proof.id);
+                  setMessage('Доказ відхилено автором');
+                }}
+                onReport={() => reportTarget('proof', proof.id, 'fraud')}
+              />
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.bodyText}>Доказів для цього квесту ще немає. Після upload вони зʼявляться тут з auto-score.</Text>
+        )}
+        {questDisputes.length ? (
+          <View style={styles.disputeBox}>
+            <Text style={styles.disputeTitle}>Escrow disputes: {questDisputes.length}</Text>
+            {questDisputes.map((dispute) => (
+              <Text key={dispute.id} style={styles.bodyText}>{dispute.status}: {dispute.reason}</Text>
+            ))}
+          </View>
+        ) : null}
+      </FeatureCard>
 
       <FeatureCard icon="hash" title="QR / NFC offline">
         <View style={styles.offlineRow}>
@@ -367,6 +442,54 @@ function TeamRow({ member }: { member: QuestTeamMember }) {
   );
 }
 
+function ReportButton({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.reportButton, pressed && styles.pressed]}>
+      <Feather color={questColors.warning} name="flag" size={16} />
+      <Text style={styles.reportButtonText}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function ProofReviewRow({
+  onApprove,
+  onDispute,
+  onReject,
+  onReport,
+  proof,
+}: {
+  onApprove: () => void;
+  onDispute: () => void;
+  onReject: () => void;
+  onReport: () => void;
+  proof: ProofSubmission;
+}) {
+  const tone = proof.status === 'approved' ? 'success' : proof.status === 'rejected' || proof.status === 'disputed' ? 'ember' : 'acid';
+
+  return (
+    <View style={styles.proofRow}>
+      <View style={styles.proofHeader}>
+        <View style={styles.proofCopy}>
+          <Text style={styles.proofTitle}>{proof.questTitle}</Text>
+          <Text style={styles.bodyText}>{proof.performerName} · auto-score {proof.autoScore}/100 · {proof.mediaTypes.join(', ')}</Text>
+        </View>
+        <ChaosBadge tone={tone}>{proof.status}</ChaosBadge>
+      </View>
+      <View style={styles.signalList}>
+        {proof.signals.map((signal) => (
+          <Text key={signal} style={styles.signalText}>• {signal}</Text>
+        ))}
+      </View>
+      <View style={styles.proofActions}>
+        <ChaosButton label="Approve" onPress={onApprove} style={styles.smallAction} variant="outline" />
+        <ChaosButton label="Reject" onPress={onReject} style={styles.smallAction} variant="ember" />
+        <ChaosButton label="Dispute" onPress={onDispute} style={styles.smallAction} variant="electric" />
+        <ChaosButton label="Report" onPress={onReport} style={styles.smallAction} variant="ghost" />
+      </View>
+    </View>
+  );
+}
+
 function Composer({
   buttonLabel,
   onChangeText,
@@ -478,6 +601,18 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.sm,
     minWidth: 180,
+  },
+  disputeBox: {
+    backgroundColor: 'rgba(255, 77, 28, 0.1)',
+    borderColor: 'rgba(255, 77, 28, 0.32)',
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    gap: spacing.xs,
+    padding: spacing.md,
+  },
+  disputeTitle: {
+    ...typography.captionStrong,
+    color: questColors.ember,
   },
   grid: {
     flexDirection: 'row',
@@ -591,6 +726,33 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.72,
   },
+  proofActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  proofCopy: {
+    flex: 1,
+    gap: spacing.xs,
+    minWidth: 0,
+  },
+  proofHeader: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  proofRow: {
+    backgroundColor: questColors.surfaceUp,
+    borderColor: questColors.border,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  proofTitle: {
+    ...typography.captionStrong,
+    color: questColors.textPrimary,
+  },
   profileCopy: {
     flex: 1,
     gap: spacing.xs,
@@ -655,6 +817,37 @@ const styles = StyleSheet.create({
   recommendationTitle: {
     ...typography.captionStrong,
     color: questColors.textPrimary,
+  },
+  reportButton: {
+    alignItems: 'center',
+    backgroundColor: questColors.surfaceUp,
+    borderColor: questColors.border,
+    borderRadius: radii.xs,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  reportButtonText: {
+    ...typography.captionStrong,
+    color: questColors.textPrimary,
+  },
+  reportGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  signalList: {
+    gap: spacing.xxs,
+  },
+  signalText: {
+    ...typography.caption,
+    color: questColors.textSecondary,
+  },
+  smallAction: {
+    flexGrow: 1,
+    minWidth: 104,
   },
   statsRow: {
     flexDirection: 'row',

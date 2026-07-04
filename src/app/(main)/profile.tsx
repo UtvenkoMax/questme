@@ -7,13 +7,14 @@ import { AchievementBadge } from '@/components/profile/AchievementBadge';
 import { AvatarPickerModal } from '@/components/profile/AvatarPickerModal';
 import { StatBlock } from '@/components/profile/StatBlock';
 import { TransactionItem } from '@/components/profile/TransactionItem';
-import { ChaosAvatar, ChaosBadge, ChaosButton, SectionKicker } from '@/components/ui/chaos';
+import { ChaosAvatar, ChaosBadge, ChaosButton, ProgressLine, SectionKicker } from '@/components/ui/chaos';
 import { LoadingState } from '@/components/ui/status';
 import { Screen } from '@/components/ui/screen';
 import { getAvatarPhotoIdForAccount, getAvatarPhotoSource } from '@/constants/avatarPhotos';
 import { questColors } from '@/constants/colors';
 import { radii, spacing } from '@/constants/spacing';
 import { typography } from '@/constants/typography';
+import { creatorFunnel, creatorMetrics, keychains, paymentProviders, seasonEvents } from '@/data/platform-features';
 import { useProfileDashboard } from '@/hooks/useProfile';
 import { getUserProfile, type UserProfile } from '@/services/auth-service';
 import {
@@ -23,11 +24,12 @@ import {
   selectTransactions,
   selectWalletSummary,
   useWalletStore,
+  usePlatformStore,
   type TransactionType,
   type WalletTransaction,
 } from '@/store';
 
-type ProfileTab = 'activity' | 'achievements' | 'wallet';
+type ProfileTab = 'activity' | 'achievements' | 'wallet' | 'growth' | 'creator' | 'collection';
 type WalletFilter = 'all' | 'income' | 'spend' | 'escrow' | 'promo' | 'premium' | 'fees';
 
 const walletFilters: { id: WalletFilter; label: string }[] = [
@@ -136,11 +138,17 @@ export default function ProfileScreen() {
         <TabButton active={activeTab === 'activity'} label="Активність" onPress={() => setActiveTab('activity')} />
         <TabButton active={activeTab === 'achievements'} label="Досягнення" onPress={() => setActiveTab('achievements')} />
         <TabButton active={activeTab === 'wallet'} label="Гаманець" onPress={() => setActiveTab('wallet')} />
+        <TabButton active={activeTab === 'growth'} label="Місії" onPress={() => setActiveTab('growth')} />
+        <TabButton active={activeTab === 'creator'} label="Creator" onPress={() => setActiveTab('creator')} />
+        <TabButton active={activeTab === 'collection'} label="Брелки" onPress={() => setActiveTab('collection')} />
       </View>
 
       {activeTab === 'activity' ? <ActivityTab /> : null}
       {activeTab === 'achievements' ? <AchievementsTab /> : null}
       {activeTab === 'wallet' ? <WalletTab /> : null}
+      {activeTab === 'growth' ? <GrowthTab /> : null}
+      {activeTab === 'creator' ? <CreatorDashboardTab /> : null}
+      {activeTab === 'collection' ? <KeychainCollectionTab /> : null}
       <AvatarPickerModal
         onClose={() => setAvatarPickerOpen(false)}
         onProfileChange={setProfile}
@@ -201,6 +209,8 @@ function WalletTab() {
   const [filter, setFilter] = useState<WalletFilter>('all');
   const [promoCode, setPromoCode] = useState('');
   const [promoMessage, setPromoMessage] = useState('');
+  const paymentRuntime = usePlatformStore((state) => state.paymentRuntime);
+  const connectPaymentProvider = usePlatformStore((state) => state.connectPaymentProvider);
   const formattedBalance = useWalletStore(selectFormattedBalance);
   const formattedEscrowBalance = useWalletStore(selectFormattedEscrowBalance);
   const transactions = useWalletStore(selectTransactions);
@@ -264,6 +274,28 @@ function WalletTab() {
         <Text style={promoMessage.includes('додано') ? styles.promoSuccess : styles.promoHint}>
           {promoMessage || 'Демо-коди: QUESTME100, CREATOR20. Інвайт-код INVITE50 уже активовано.'}
         </Text>
+      </View>
+
+      <View style={styles.walletCard}>
+        <SectionKicker eyebrow="Payments" title="Реальні платіжні провайдери" />
+        {paymentProviders.map((provider) => {
+          const status = paymentRuntime[provider.id];
+          return (
+            <View key={provider.id} style={styles.providerRow}>
+              <View style={styles.providerCopy}>
+                <Text style={styles.providerTitle}>{provider.label}</Text>
+                <Text style={styles.providerText}>{provider.subtitle}</Text>
+                <Text style={styles.providerText}>{provider.settlement}</Text>
+              </View>
+              <ChaosButton
+                label={status === 'connected' ? 'Connected' : status === 'sandbox' ? 'Sandbox' : 'Connect'}
+                onPress={() => connectPaymentProvider(provider.id)}
+                style={styles.providerAction}
+                variant={status === 'connected' ? 'outline' : 'electric'}
+              />
+            </View>
+          );
+        })}
       </View>
 
       {activeEscrows.length ? (
@@ -357,6 +389,172 @@ function WalletMetric({
   );
 }
 
+function GrowthTab() {
+  const missions = usePlatformStore((state) => state.missions);
+  const spinTokens = usePlatformStore((state) => state.spinTokens);
+  const claimMission = usePlatformStore((state) => state.claimMission);
+  const [message, setMessage] = useState('');
+  const inviteCode = 'QUESTME-HALEN-50';
+  const invited = 7;
+  const converted = 4;
+
+  return (
+    <View style={styles.panel}>
+      <View style={styles.walletCard}>
+        <SectionKicker eyebrow="Referrals" title="Інвайти та бонуси" />
+        <Text style={styles.referralCode}>{inviteCode}</Text>
+        <Text style={styles.promoHint}>
+          За друга, який виконав перший квест, нараховується 50 грн бонусу та 1 roulette spin.
+        </Text>
+        <View style={styles.walletStats}>
+          <WalletMetric label="запрошено" value={`${invited}`} tone="electric" />
+          <WalletMetric label="активовані" value={`${converted}`} tone="success" />
+          <WalletMetric label="spin-токени" value={`${spinTokens}`} tone="ember" />
+        </View>
+      </View>
+
+      <View style={styles.walletCard}>
+        <SectionKicker eyebrow="Daily" title="Щоденні місії" />
+        {missions.map((mission) => {
+          const percent = Math.round((mission.progress / mission.target) * 100);
+          const ready = mission.progress >= mission.target;
+          return (
+            <View key={mission.id} style={styles.missionRow}>
+              <View style={styles.missionCopy}>
+                <Text style={styles.missionTitle}>{mission.title}</Text>
+                <Text style={styles.promoHint}>{mission.season} · +{mission.rewardSpins} roulette spin</Text>
+                <ProgressLine percent={percent} tone={ready ? 'success' : 'electric'} />
+              </View>
+              <ChaosButton
+                disabled={!ready || mission.claimed}
+                label={mission.claimed ? 'Claimed' : 'Claim'}
+                onPress={() => {
+                  const ok = claimMission(mission.id);
+                  setMessage(ok ? 'Нагороду місії додано.' : 'Місію ще не завершено.');
+                }}
+                style={styles.missionAction}
+                variant={ready ? 'electric' : 'outline'}
+              />
+            </View>
+          );
+        })}
+        {message ? <Text style={styles.promoSuccess}>{message}</Text> : null}
+      </View>
+
+      <View style={styles.walletCard}>
+        <SectionKicker eyebrow="Season" title="Сезонні івенти" />
+        {seasonEvents.map((event) => (
+          <View key={event.id} style={styles.eventRow}>
+            <View style={styles.missionCopy}>
+              <Text style={styles.missionTitle}>{event.title}</Text>
+              <Text style={styles.promoHint}>Нагорода: {event.reward}</Text>
+              <ProgressLine percent={event.progress} tone="acid" />
+            </View>
+            <ChaosBadge tone="acid">{event.progress}%</ChaosBadge>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function CreatorDashboardTab() {
+  return (
+    <View style={styles.panel}>
+      <View style={styles.walletCard}>
+        <SectionKicker eyebrow="Creator" title="Статистика автора" />
+        <View style={styles.creatorGrid}>
+          {creatorMetrics.map((metric) => (
+            <View key={metric.label} style={styles.creatorMetric}>
+              <Text style={styles.creatorMetricValue}>{metric.value}</Text>
+              <Text style={styles.creatorMetricLabel}>{metric.label}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.walletCard}>
+        <SectionKicker eyebrow="Funnel" title="Перегляди → виконання" />
+        {creatorFunnel.map((item) => (
+          <View key={item.label} style={styles.funnelRow}>
+            <Text style={styles.funnelLabel}>{item.label}</Text>
+            <Text style={styles.funnelValue}>{item.value}</Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.walletCard}>
+        <SectionKicker eyebrow="Risk" title="Операційний стан" />
+        <Text style={styles.promoHint}>4 proofs очікують автора, 1 escrow dispute відкритий, 1 скарга у triage.</Text>
+      </View>
+    </View>
+  );
+}
+
+function KeychainCollectionTab() {
+  const dailySpinDate = usePlatformStore((state) => state.dailySpinDate);
+  const inventory = usePlatformStore((state) => state.keychainInventory);
+  const lastSpinRewardId = usePlatformStore((state) => state.lastSpinRewardId);
+  const spinTokens = usePlatformStore((state) => state.spinTokens);
+  const spinKeychainRoulette = usePlatformStore((state) => state.spinKeychainRoulette);
+  const [message, setMessage] = useState('');
+  const today = new Date().toISOString().slice(0, 10);
+  const dailyAvailable = dailySpinDate !== today;
+  const lastReward = lastSpinRewardId ? keychains.find((keychain) => keychain.id === lastSpinRewardId) : null;
+
+  const spin = (source: 'daily' | 'mission') => {
+    const result = spinKeychainRoulette(source);
+    setMessage(result.message);
+  };
+
+  return (
+    <View style={styles.panel}>
+      <View style={styles.walletHero}>
+        <Text style={styles.walletLabel}>Keychain roulette</Text>
+        <Text style={styles.walletValue}>{Object.values(inventory).reduce((sum, count) => sum + count, 0)}</Text>
+        <Text style={styles.walletSubtle}>
+          Без платних spinів: 1 daily-крутіння або токени за місії. Шанси відкриті: common 68%, rare 22%, epic 8.5%, legendary 1.5%.
+        </Text>
+        <View style={styles.actions}>
+          <ChaosButton
+            disabled={!dailyAvailable}
+            label={dailyAvailable ? 'Daily spin' : 'Завтра'}
+            onPress={() => spin('daily')}
+            style={styles.action}
+            variant="ember"
+          />
+          <ChaosButton
+            disabled={spinTokens <= 0}
+            label={`Mission spin (${spinTokens})`}
+            onPress={() => spin('mission')}
+            style={styles.action}
+            variant="electric"
+          />
+        </View>
+        {message ? <Text style={styles.promoSuccess}>{message}</Text> : null}
+        {lastReward ? <ChaosBadge tone="acid">last: {lastReward.label}</ChaosBadge> : null}
+      </View>
+
+      <View style={styles.keychainGrid}>
+        {keychains.map((keychain) => {
+          const count = inventory[keychain.id] ?? 0;
+          return (
+            <View key={keychain.id} style={[styles.keychainCard, count > 0 && styles.keychainCardUnlocked]}>
+              <View style={styles.keychainToken}>
+                <Text style={styles.keychainSymbol}>{keychain.symbol}</Text>
+              </View>
+              <Text style={styles.keychainTitle}>{keychain.label}</Text>
+              <Text style={styles.keychainRarity}>{keychain.rarity}</Text>
+              <Text style={styles.promoHint}>{keychain.description}</Text>
+              <ChaosBadge tone={count > 0 ? 'success' : 'muted'}>{count > 0 ? `x${count}` : 'locked'}</ChaosBadge>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   action: {
     flex: 1,
@@ -419,6 +617,30 @@ const styles = StyleSheet.create({
     color: questColors.textSecondary,
     textAlign: 'center',
   },
+  creatorGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  creatorMetric: {
+    backgroundColor: questColors.surfaceUp,
+    borderColor: questColors.border,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    flex: 1,
+    gap: spacing.xs,
+    minWidth: 138,
+    padding: spacing.md,
+  },
+  creatorMetricLabel: {
+    ...typography.eyebrow,
+    color: questColors.textSecondary,
+    textTransform: 'uppercase',
+  },
+  creatorMetricValue: {
+    ...typography.subtitle,
+    color: questColors.acid,
+  },
   escrowAction: {
     flex: 1,
     minWidth: 130,
@@ -471,6 +693,32 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.xs,
   },
+  eventRow: {
+    alignItems: 'center',
+    backgroundColor: questColors.surfaceUp,
+    borderColor: questColors.border,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  funnelLabel: {
+    ...typography.caption,
+    color: questColors.textSecondary,
+  },
+  funnelRow: {
+    alignItems: 'center',
+    borderBottomColor: questColors.border,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+  },
+  funnelValue: {
+    ...typography.captionStrong,
+    color: questColors.acid,
+  },
   level: {
     ...typography.body,
     color: questColors.textSecondary,
@@ -481,6 +729,96 @@ const styles = StyleSheet.create({
   },
   panel: {
     gap: spacing.md,
+  },
+  keychainCard: {
+    backgroundColor: questColors.surface,
+    borderColor: questColors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    flexGrow: 1,
+    flexBasis: 150,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  keychainCardUnlocked: {
+    backgroundColor: 'rgba(196,255,0,0.08)',
+    borderColor: 'rgba(196,255,0,0.36)',
+  },
+  keychainGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  keychainRarity: {
+    ...typography.eyebrow,
+    color: questColors.ember,
+    textTransform: 'uppercase',
+  },
+  keychainSymbol: {
+    ...typography.label,
+    color: questColors.void,
+  },
+  keychainTitle: {
+    ...typography.captionStrong,
+    color: questColors.textPrimary,
+  },
+  keychainToken: {
+    alignItems: 'center',
+    backgroundColor: questColors.acid,
+    borderRadius: radii.pill,
+    height: 42,
+    justifyContent: 'center',
+    width: 42,
+  },
+  missionAction: {
+    minWidth: 116,
+  },
+  missionCopy: {
+    flex: 1,
+    gap: spacing.xs,
+    minWidth: 0,
+  },
+  missionRow: {
+    alignItems: 'center',
+    backgroundColor: questColors.surfaceUp,
+    borderColor: questColors.border,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  missionTitle: {
+    ...typography.captionStrong,
+    color: questColors.textPrimary,
+  },
+  providerAction: {
+    minWidth: 118,
+  },
+  providerCopy: {
+    flex: 1,
+    gap: spacing.xxs,
+    minWidth: 0,
+  },
+  providerRow: {
+    alignItems: 'center',
+    backgroundColor: questColors.surfaceUp,
+    borderColor: questColors.border,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  providerText: {
+    ...typography.caption,
+    color: questColors.textSecondary,
+  },
+  providerTitle: {
+    ...typography.captionStrong,
+    color: questColors.textPrimary,
   },
   promoButton: {
     minWidth: 150,
@@ -511,6 +849,10 @@ const styles = StyleSheet.create({
     ...typography.captionStrong,
     color: questColors.success,
   },
+  referralCode: {
+    ...typography.titleCompact,
+    color: questColors.acid,
+  },
   stats: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -521,6 +863,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
     borderBottomWidth: 2,
     flex: 1,
+    minWidth: 96,
     paddingVertical: spacing.sm,
   },
   tabActive: {
@@ -539,6 +882,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm,
     borderWidth: 1,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: spacing.xs,
   },
   walletHero: {
