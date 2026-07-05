@@ -1,6 +1,7 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, PanResponder, Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { authenticateWithBiometrics } from '@/components/auth/biometric-auth';
 import { useAppPreferences } from '@/components/providers/app-preferences';
@@ -23,6 +24,15 @@ import {
 import { INTEREST_OPTIONS, type InterestId, type LanguagePreference, type ThemePreference } from '@/services/preferences-service';
 import { usePlatformStore } from '@/store';
 import { styles } from '@/styles/security.styles';
+import { spacing } from '@/theme';
+
+const SEGMENT_INSET = spacing.xxs;
+const SEGMENT_GAP = spacing.xs;
+const SEGMENT_SPRING = {
+  damping: 18,
+  mass: 0.8,
+  stiffness: 260,
+};
 
 const THEME_OPTIONS: { label: string; value: ThemePreference }[] = [
   { label: 'Система', value: 'system' },
@@ -304,18 +314,104 @@ type ChoiceGroupProps<T extends string> = {
 };
 
 function ChoiceGroup<T extends string>({ label, onSelect, options, value }: ChoiceGroupProps<T>) {
+  const selectedIndex = Math.max(
+    0,
+    options.findIndex((option) => option.value === value)
+  );
+  const [segmentWidth, setSegmentWidth] = useState(0);
+  const slideX = useSharedValue(0);
+  const dragStartX = useSharedValue(0);
+  const usableWidth = Math.max(segmentWidth - SEGMENT_INSET * 2 - SEGMENT_GAP * (options.length - 1), 0);
+  const optionWidth = options.length ? usableWidth / options.length : 0;
+  const step = optionWidth + SEGMENT_GAP;
+  const maxSlideX = step * Math.max(options.length - 1, 0);
+
+  const getTargetX = useCallback(
+    (index: number) => step * Math.max(0, Math.min(index, options.length - 1)),
+    [options.length, step]
+  );
+  const clampSlideX = useCallback((nextX: number) => Math.max(0, Math.min(nextX, maxSlideX)), [maxSlideX]);
+
+  const settleToIndex = useCallback(
+    (index: number) => {
+      slideX.value = withSpring(getTargetX(index), SEGMENT_SPRING);
+    },
+    [getTargetX, slideX]
+  );
+
+  const selectIndex = useCallback(
+    (index: number) => {
+      const nextIndex = Math.max(0, Math.min(index, options.length - 1));
+      const nextOption = options[nextIndex];
+
+      if (!nextOption) return;
+
+      settleToIndex(nextIndex);
+      onSelect(nextOption.value);
+    },
+    [onSelect, options, settleToIndex]
+  );
+
+  const handleLayout = useCallback((event: LayoutChangeEvent) => {
+    setSegmentWidth(event.nativeEvent.layout.width);
+  }, []);
+
+  useEffect(() => {
+    if (!optionWidth) return;
+    settleToIndex(selectedIndex);
+  }, [optionWidth, selectedIndex, settleToIndex]);
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gesture) =>
+          optionWidth > 0 && Math.abs(gesture.dx) > 4 && Math.abs(gesture.dx) > Math.abs(gesture.dy),
+        onMoveShouldSetPanResponderCapture: (_, gesture) =>
+          optionWidth > 0 && Math.abs(gesture.dx) > 4 && Math.abs(gesture.dx) > Math.abs(gesture.dy),
+        onPanResponderGrant: (event, gesture) => {
+          const touchStartX = event.nativeEvent.locationX - SEGMENT_INSET - optionWidth / 2 - gesture.dx;
+          const nextX = Number.isFinite(touchStartX) ? clampSlideX(touchStartX) : getTargetX(selectedIndex);
+
+          dragStartX.value = nextX;
+          slideX.value = nextX;
+        },
+        onPanResponderMove: (_, gesture) => {
+          const nextX = clampSlideX(dragStartX.value + gesture.dx);
+          slideX.value = nextX;
+        },
+        onPanResponderRelease: (_, gesture) => {
+          const rawIndex = step ? Math.round(clampSlideX(dragStartX.value + gesture.dx) / step) : selectedIndex;
+          selectIndex(rawIndex);
+        },
+        onPanResponderTerminate: () => settleToIndex(selectedIndex),
+      }),
+    [clampSlideX, dragStartX, getTargetX, optionWidth, selectIndex, selectedIndex, settleToIndex, slideX, step]
+  );
+
+  const thumbStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: slideX.value }],
+  }));
+
   return (
     <View style={styles.choiceGroup}>
       <Text style={styles.choiceLabel}>{label}</Text>
-      <View style={styles.segment}>
-        {options.map((option) => {
+      <View onLayout={handleLayout} style={styles.segment} {...panResponder.panHandlers}>
+        {optionWidth > 0 ? (
+          <Animated.View pointerEvents="none" style={[styles.segmentThumb, { width: optionWidth }, thumbStyle]} />
+        ) : null}
+        {options.map((option, optionIndex) => {
           const selected = option.value === value;
           return (
             <Pressable
               accessibilityRole="button"
+              accessibilityState={{ selected }}
               key={option.value}
-              onPress={() => onSelect(option.value)}
-              style={[styles.segmentButton, selected && styles.segmentButtonSelected]}>
+              onPress={() => selectIndex(optionIndex)}
+              style={({ pressed }) => [
+                styles.segmentButton,
+                optionWidth <= 0 && selected && styles.segmentButtonSelected,
+                pressed && styles.segmentButtonPressed,
+              ]}>
               <Text style={[styles.segmentText, selected && styles.segmentTextSelected]}>{option.label}</Text>
             </Pressable>
           );

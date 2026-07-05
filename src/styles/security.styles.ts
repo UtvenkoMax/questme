@@ -67,7 +67,9 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.xs,
+    overflow: 'hidden',
     padding: spacing.xxs,
+    position: 'relative',
   },
   segmentButton: {
     alignItems: 'center',
@@ -76,6 +78,10 @@ export const styles = StyleSheet.create({
     minHeight: 38,
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
+    zIndex: 1,
+  },
+  segmentButtonPressed: {
+    opacity: 0.82,
   },
   segmentButtonSelected: {
     backgroundColor: colors.primary,
@@ -87,6 +93,14 @@ export const styles = StyleSheet.create({
   },
   segmentTextSelected: {
     color: colors.white,
+  },
+  segmentThumb: {
+    backgroundColor: colors.primary,
+    borderRadius: 999,
+    bottom: spacing.xxs,
+    left: spacing.xxs,
+    position: 'absolute',
+    top: spacing.xxs,
   },
   rouletteActions: {
     flexDirection: 'row',
