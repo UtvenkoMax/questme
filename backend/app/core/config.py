@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     media_upload_dir: str = "./uploads"
     max_upload_size_mb: int = 10
 
+    # Media tools
+    ffmpeg_location: str = ""
+
     # CORS — allow all Expo dev ports
     cors_origins: list[str] = [
         "http://localhost:8081",
@@ -45,7 +48,7 @@ class Settings(BaseSettings):
         "http://localhost:3000",
     ]
 
-    model_config = {"env_file": ".env", "env_prefix": "QUESTME_"}
+    model_config = {"env_file": ("../.env", ".env"), "env_prefix": "QUESTME_"}
 
     @property
     def use_database(self) -> bool:

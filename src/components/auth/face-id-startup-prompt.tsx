@@ -1,9 +1,9 @@
 import * as LocalAuthentication from 'expo-local-authentication';
-import * as SecureStore from 'expo-secure-store';
 import { usePathname } from 'expo-router';
 import { useCallback, useEffect, useRef } from 'react';
 import { Alert, AppState, type AppStateStatus } from 'react-native';
 
+import { getAuthItem, setAuthItem } from './auth-storage';
 import {
   BIOMETRIC_ENABLED_KEY,
   FACE_ID_ENABLED_KEY,
@@ -31,8 +31,8 @@ export function FaceIdStartupPrompt() {
 
     if (result.success) {
       await Promise.all([
-        SecureStore.setItemAsync(FACE_ID_ENABLED_KEY, 'true'),
-        SecureStore.setItemAsync(BIOMETRIC_ENABLED_KEY, 'true'),
+        setAuthItem(FACE_ID_ENABLED_KEY, 'true'),
+        setAuthItem(BIOMETRIC_ENABLED_KEY, 'true'),
       ]);
     }
   }, []);
@@ -86,8 +86,8 @@ export function FaceIdStartupPrompt() {
     promptInFlight.current = true;
     try {
       const [pin, faceIdEnabled] = await Promise.all([
-        SecureStore.getItemAsync(PIN_KEY),
-        SecureStore.getItemAsync(FACE_ID_ENABLED_KEY),
+        getAuthItem(PIN_KEY),
+        getAuthItem(FACE_ID_ENABLED_KEY),
       ]);
 
       if (!pin || faceIdEnabled === 'true' || promptedInActiveSession.current) return;

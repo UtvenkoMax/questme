@@ -73,6 +73,7 @@ export default function LoginScreen() {
     }
   }, [biometricEnabled, unlock]);
 
+
   useEffect(() => {
     let isMounted = true;
 
