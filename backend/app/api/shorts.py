@@ -7,12 +7,17 @@ bypassing the need for WebView embeds on the client.
 
 import asyncio
 import hashlib
+import os
+import shutil
 import time
 from functools import lru_cache
+from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
+
+from app.core.config import get_settings
 
 router = APIRouter(prefix="/shorts", tags=["shorts"])
 
@@ -23,6 +28,72 @@ router = APIRouter(prefix="/shorts", tags=["shorts"])
 
 _stream_cache: dict[str, tuple[dict, float]] = {}
 _CACHE_TTL_SECONDS = 3600  # YouTube stream URLs typically expire in ~6 hours
+
+
+def _find_executable(directory: Path, name: str) -> Path | None:
+    for executable_name in (name, f"{name}.exe"):
+        executable_path = directory / executable_name
+        if executable_path.exists():
+            return executable_path
+
+    return None
+
+
+def _get_common_ffmpeg_location() -> str | None:
+    def from_env(env_name: str, *parts: str) -> Path | None:
+        base_path = os.environ.get(env_name)
+        return Path(base_path, *parts) if base_path else None
+
+    candidate_dirs = [
+        from_env("LOCALAPPDATA", "Microsoft", "WinGet", "Links"),
+        from_env("USERPROFILE", "scoop", "shims"),
+        from_env("ProgramData", "chocolatey", "bin"),
+    ]
+
+    for candidate_dir in candidate_dirs:
+        if candidate_dir is None:
+            continue
+
+        ffmpeg_path = _find_executable(candidate_dir, "ffmpeg")
+        if not ffmpeg_path:
+            continue
+
+        ffprobe_path = _find_executable(candidate_dir, "ffprobe")
+        return str(candidate_dir if ffprobe_path else ffmpeg_path)
+
+    return None
+
+
+@lru_cache
+def _get_ffmpeg_location() -> str | None:
+    configured_location = get_settings().ffmpeg_location.strip()
+
+    if configured_location:
+        return configured_location
+
+    ffmpeg_path = shutil.which("ffmpeg")
+    ffprobe_path = shutil.which("ffprobe")
+
+    if not ffmpeg_path:
+        return _get_common_ffmpeg_location()
+
+    ffmpeg_dir = str(Path(ffmpeg_path).parent)
+    if ffprobe_path and Path(ffprobe_path).parent == Path(ffmpeg_path).parent:
+        return ffmpeg_dir
+
+    return ffmpeg_path
+
+
+def _with_ffmpeg_location(ydl_opts: dict) -> dict:
+    ffmpeg_location = _get_ffmpeg_location()
+
+    if not ffmpeg_location:
+        return ydl_opts
+
+    return {
+        **ydl_opts,
+        "ffmpeg_location": ffmpeg_location,
+    }
 
 
 def _cache_key(video_id: str, quality: str) -> str:
@@ -109,7 +180,7 @@ def _extract_stream_sync(video_id: str, quality: str = "best") -> dict:
     else:  # "best"
         fmt = "best[ext=mp4]/best"
 
-    ydl_opts = {
+    ydl_opts = _with_ffmpeg_location({
         "format": fmt,
         "quiet": True,
         "no_warnings": True,
@@ -119,7 +190,7 @@ def _extract_stream_sync(video_id: str, quality: str = "best") -> dict:
         "extract_flat": False,
         # Avoid geo-restrictions on some Shorts
         "geo_bypass": True,
-    }
+    })
 
     with YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
@@ -250,13 +321,13 @@ async def search_and_extract(
     # Use yt-dlp's built-in YouTube search to find shorts
     search_url = f"ytsearch{max_results}:{q} #shorts"
 
-    ydl_opts = {
+    ydl_opts = _with_ffmpeg_location({
         "quiet": True,
         "no_warnings": True,
         "skip_download": True,
         "extract_flat": True,
         "no_check_certificates": True,
-    }
+    })
 
     loop = asyncio.get_running_loop()
 
