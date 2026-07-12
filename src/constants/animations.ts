@@ -9,3 +9,9 @@ export const TRANSITIONS = {
   medium: 250,
   slow: 400,
 };
+
+export const motion = {
+  fast: 140,
+  normal: 220,
+  slow: 360,
+} as const;

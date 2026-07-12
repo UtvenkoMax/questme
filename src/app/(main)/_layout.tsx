@@ -1,4 +1,3 @@
-import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { Redirect, Tabs } from 'expo-router';
 import { CheckSquare, House, MapPin, PlayCircle, Plus, UserCircle } from 'phosphor-react-native';
@@ -79,7 +78,6 @@ export default function MainTabsLayout() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: questColors.electric,
-        tabBarBackground: () => <BlurView intensity={38} style={StyleSheet.absoluteFill} tint="dark" />,
         tabBarInactiveTintColor: questColors.textSecondary,
         tabBarIcon: ({ color, focused }) => {
           const Icon = TAB_ICONS[route.name as keyof typeof TAB_ICONS] ?? House;
@@ -133,7 +131,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
   },
   tabBar: {
-    backgroundColor: 'rgba(17,17,24,0.86)',
+    backgroundColor: questColors.surface,
     borderTopColor: questColors.border,
     borderTopWidth: 1,
     paddingTop: 8,

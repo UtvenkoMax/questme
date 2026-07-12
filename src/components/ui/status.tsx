@@ -71,6 +71,10 @@ export function LoadingState({ text = 'Завантажуємо...' }: { text?: 
   );
 }
 
+export function ErrorState({ action, text = 'Перевірте з’єднання та спробуйте ще раз.', title = 'Не вдалося завантажити дані' }: { action?: ReactNode; text?: string; title?: string }) {
+  return <EmptyState action={action} icon="alert-circle" text={text} title={title} />;
+}
+
 const styles = StyleSheet.create({
   notice: {
     alignItems: 'flex-start',

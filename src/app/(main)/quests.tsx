@@ -1,343 +1,94 @@
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { Shuffle } from 'phosphor-react-native';
-import { useMemo, useRef, useState } from 'react';
-import {
-  Animated,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { useMemo, useState } from 'react';
+import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { CategoryFilter } from '@/components/quest/CategoryFilter';
 import { QuestCard } from '@/components/quest/QuestCard';
-import { ChaosAvatar, ChaosBadge, ChaosButton, SectionKicker, StatPill } from '@/components/ui/chaos';
-import { Notice } from '@/components/ui/status';
-import { Screen } from '@/components/ui/screen';
-import { getAvatarPhotoIdForAccount, getAvatarPhotoSource } from '@/constants/avatarPhotos';
-import { questColors } from '@/constants/colors';
-import { radii, spacing } from '@/constants/spacing';
-import { typography } from '@/constants/typography';
+import { AppButton, AppCard, Avatar, Badge, IconAction, SearchInput, SectionHeader } from '@/components/ui/app';
+import { EmptyState, LoadingState, Notice } from '@/components/ui/status';
+import { colors, radii, spacing, typography } from '@/theme';
 import { questOfDay, type FeedQuest } from '@/data/questme';
-import type { QuestFeedFilter } from '@/data/social-features';
 import { useQuestFeed } from '@/hooks/useQuestFeed';
+
+const recentSearches = ['С„РѕС‚Рѕ', 'РїРѕСЂСѓС‡', 'РґРѕ 100 РіСЂРЅ'];
 
 export default function FeedScreen() {
   const router = useRouter();
-  const {
-    feedFilters,
-    quests,
-    refresh,
-    refreshing,
-    searchQuery,
-    selectedCategory,
-    selectedFilter,
-    setSearchQuery,
-    setSelectedCategory,
-    setSelectedFilter,
-  } = useQuestFeed();
-  const [message, setMessage] = useState('');
-  const spin = useRef(new Animated.Value(0)).current;
-
-  const spinStyle = useMemo(
-    () => ({
-      transform: [
-        {
-          rotate: spin.interpolate({
-            inputRange: [0, 1],
-            outputRange: ['0deg', '360deg'],
-          }),
-        },
-      ],
-    }),
-    [spin]
-  );
-
-  const onRefresh = async () => {
-    spin.setValue(0);
-    Animated.loop(Animated.timing(spin, { duration: 680, toValue: 1, useNativeDriver: true })).start();
-    await refresh();
-    spin.stopAnimation();
-  };
+  const { categories, feedFilters, quests, refresh, refreshing, searchQuery, selectedCategory, selectedFilter, setSearchQuery, setSelectedCategory, setSelectedFilter } = useQuestFeed();
+  const [notice, setNotice] = useState<string | null>(null);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [initialLoading] = useState(false);
+  const visibleQuests = useMemo(() => quests, [quests]);
 
   const takeQuest = (quest: FeedQuest) => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    setMessage(`Квест взято: ${quest.title}`);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+    setNotice(`РљРІРµСЃС‚ В«${quest.title}В» РґРѕРґР°РЅРѕ РґРѕ РІР°С€РёС… Р·Р°РІРґР°РЅСЊ.`);
   };
 
-  const runRoulette = () => {
-    const randomQuest = quests[Math.floor(Math.random() * quests.length)];
-    if (!randomQuest) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
-    setMessage(`Рулетка вибрала: ${randomQuest.title}`);
-  };
-
-  const openQuest = (quest: FeedQuest) => {
-    router.push({ pathname: '/quest/[id]', params: { id: quest.id } });
-  };
+  if (initialLoading) {
+    return <View style={styles.loading}><LoadingState text="Р—Р°РІР°РЅС‚Р°Р¶СѓС”РјРѕ РєРІРµСЃС‚РёвЂ¦" /></View>;
+  }
 
   return (
-    <Screen contentStyle={styles.screenContent} scroll={false} wide>
+    <View style={styles.screen}>
       <FlatList
+        contentContainerStyle={styles.list}
+        data={visibleQuests}
+        keyExtractor={(item) => item.id}
+        ListEmptyComponent={<EmptyState action={<AppButton label="РЎРєРёРЅСѓС‚Рё С„С–Р»СЊС‚СЂРё" onPress={() => { setSearchQuery(''); setSelectedCategory('all'); setSelectedFilter('all'); }} tone="secondary" />} text="РЎРїСЂРѕР±СѓР№С‚Рµ С–РЅС€Сѓ РєР°С‚РµРіРѕСЂС–СЋ, Р·Р°РїРёС‚ Р°Р±Рѕ РїРµСЂРµРіР»СЏРЅСЊС‚Рµ Р·Р±РµСЂРµР¶РµРЅС– РєРІРµСЃС‚Рё." title="Р—Р° С†РёРјРё С„С–Р»СЊС‚СЂР°РјРё РєРІРµСЃС‚С–РІ РЅРµРјР°С”" />}
         ListHeaderComponent={
           <View style={styles.header}>
-            <View style={styles.heroTop}>
-              <View>
-                <Text style={styles.kicker}>QuestMe Feed</Text>
-                <Text style={styles.title}>Квести, за які платять.</Text>
+            <View style={styles.topBar}>
+              <Pressable accessibilityLabel="Open profile" accessibilityRole="button" onPress={() => router.push('/profile')} style={styles.profileAction}>
+                <Avatar label="QM" /><View><Text style={styles.greeting}>Р”РѕР±СЂРѕРіРѕ РґРЅСЏ</Text><Text style={styles.name}>РўРІС–Р№ РЅР°СЃС‚СѓРїРЅРёР№ РєРІРµСЃС‚</Text></View>
+              </Pressable>
+              <View style={styles.topActions}>
+                <IconAction accessibilityLabel="Open map" icon="map-pin" onPress={() => router.push('/map')} />
+                <IconAction accessibilityLabel="Open notifications" icon="bell" onPress={() => router.push('/notifications')} />
               </View>
-              <Animated.View style={[styles.qmSpinner, refreshing && spinStyle]}>
-                <Text style={styles.qmText}>QM</Text>
-              </Animated.View>
             </View>
 
-            <QuestOfDayBanner onTake={() => takeQuest(questOfDay)} />
+            <SearchInput onChangeText={setSearchQuery} onClear={() => setSearchQuery('')} onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)} placeholder="РЁСѓРєР°С‚Рё РєРІРµСЃС‚Рё, РјС–СЃС†СЏ Р°Р±Рѕ Р°РІС‚РѕСЂС–РІ" value={searchQuery} />
+            {searchFocused && !searchQuery ? <View style={styles.recent}><Text style={styles.recentLabel}>РќРµРґР°РІРЅС– Р·Р°РїРёС‚Рё</Text><View style={styles.recentItems}>{recentSearches.map((item) => <Pressable accessibilityRole="button" key={item} onPress={() => setSearchQuery(item)} style={styles.recentChip}><Text style={styles.recentText}>{item}</Text></Pressable>)}</View></View> : null}
 
-            <View style={styles.statsRow}>
-              <StatPill label="активні" value="14,892" />
-              <StatPill label="сьогодні" value="+2,341 грн" />
-              <StatPill label="серія" value="7 днів" />
-            </View>
+            <ScrollView contentContainerStyle={styles.categoryRail} horizontal showsHorizontalScrollIndicator={false}>
+              {categories.map((category) => {
+                const active = category.id === selectedCategory;
+                return <Pressable accessibilityRole="button" key={category.id} onPress={() => setSelectedCategory(category.id)} style={[styles.category, active && styles.categoryActive]}><Text style={styles.categoryIcon}>{category.icon}</Text><Text style={[styles.categoryText, active && styles.categoryTextActive]}>{category.label}</Text></Pressable>;
+              })}
+            </ScrollView>
 
-            <SectionKicker
-              action={
-                <ChaosButton
-                  icon={<Shuffle color={questColors.void} size={18} weight="bold" />}
-                  label="Рулетка"
-                  onPress={runRoulette}
-                  variant="ember"
-                />
-              }
-              eyebrow="Категорії"
-              title="Обери свій рівень хаосу"
-            />
-            <CategoryFilter selected={selectedCategory} onSelect={setSelectedCategory} />
-            <TextInput
-              autoCapitalize="none"
-              onChangeText={setSearchQuery}
-              placeholder="Пошук за назвою, містом, категорією"
-              placeholderTextColor={questColors.textSecondary}
-              selectionColor={questColors.acid}
-              style={styles.searchInput}
-              value={searchQuery}
-            />
-            <FeedFilterRail
-              filters={feedFilters}
-              onSelect={setSelectedFilter}
-              selected={selectedFilter}
-            />
-            {message ? <Notice tone="success">{message}</Notice> : null}
+            <QuestOfDay onTake={() => takeQuest(questOfDay)} />
+            <SectionHeader eyebrow="РџРµСЂСЃРѕРЅР°Р»СЊРЅР° РґРѕР±С–СЂРєР°" title="РљРІРµСЃС‚Рё РґР»СЏ РІР°СЃ" />
+            <ScrollView contentContainerStyle={styles.filterRail} horizontal showsHorizontalScrollIndicator={false}>
+              {feedFilters.map((filter) => <FilterChip active={filter.id === selectedFilter} key={filter.id} label={filter.label} onPress={() => setSelectedFilter(filter.id)} />)}
+            </ScrollView>
+            {notice ? <Notice tone="success">{notice}</Notice> : null}
           </View>
         }
-        ListEmptyComponent={
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>Немає квестів за цими фільтрами</Text>
-            <Text style={styles.emptyText}>
-              Змініть категорію, пошук або відкрийте збережені після свайпу чи кнопки bookmark.
-            </Text>
-          </View>
-        }
-        contentContainerStyle={styles.listContent}
-        data={quests}
-        keyExtractor={(item) => item.id}
-        refreshControl={
-          <RefreshControl
-            colors={[questColors.acid, questColors.electric]}
-            onRefresh={onRefresh}
-            progressBackgroundColor={questColors.surface}
-            refreshing={refreshing}
-            tintColor={questColors.acid}
-          />
-        }
-        renderItem={({ index, item }) => (
-          <QuestCard index={index} quest={item} onOpen={openQuest} onTake={takeQuest} />
-        )}
+        refreshControl={<RefreshControl colors={[colors.primary]} onRefresh={refresh} refreshing={refreshing} tintColor={colors.primary} />}
+        renderItem={({ item, index }) => <QuestCard index={index} onOpen={(quest) => router.push({ pathname: '/quest/[id]', params: { id: quest.id } })} onTake={takeQuest} quest={item} />}
         showsVerticalScrollIndicator={false}
       />
-    </Screen>
-  );
-}
-
-function FeedFilterRail({
-  filters,
-  onSelect,
-  selected,
-}: {
-  filters: { id: QuestFeedFilter; label: string }[];
-  onSelect: (id: QuestFeedFilter) => void;
-  selected: QuestFeedFilter;
-}) {
-  return (
-    <View style={styles.filterRow}>
-      {filters.map((filter) => {
-        const active = filter.id === selected;
-
-        return (
-          <Pressable
-            accessibilityRole="button"
-            key={filter.id}
-            onPress={() => onSelect(filter.id)}
-            style={({ pressed }) => [styles.filterChip, active && styles.filterChipActive, pressed && styles.pressed]}>
-            <Text style={[styles.filterText, active && styles.filterTextActive]}>{filter.label}</Text>
-          </Pressable>
-        );
-      })}
     </View>
   );
 }
 
-function QuestOfDayBanner({ onTake }: { onTake: () => void }) {
-  return (
-    <View style={styles.dayCard}>
-      <View style={styles.dayHeader}>
-        <ChaosAvatar
-          label={questOfDay.avatar}
-          size={40}
-          source={getAvatarPhotoSource(getAvatarPhotoIdForAccount(`${questOfDay.id}:${questOfDay.author}`))}
-        />
-        <View style={styles.dayCopy}>
-          <Text style={styles.dayEyebrow}>Рандомний квест дня</Text>
-          <Text style={styles.dayTimer}>{questOfDay.deadline}</Text>
-        </View>
-        <ChaosBadge tone="acid">{questOfDay.reward} грн</ChaosBadge>
-      </View>
-      <Text style={styles.dayTitle}>{questOfDay.title}</Text>
-      <ChaosButton label="Взяти квест дня" onPress={onTake} />
-    </View>
-  );
+function FilterChip({ active, label, onPress }: { active: boolean; label: string; onPress: () => void }) {
+  return <Pressable accessibilityRole="button" onPress={onPress} style={[styles.filter, active && styles.filterActive]}><Text style={[styles.filterText, active && styles.filterTextActive]}>{label}</Text></Pressable>;
+}
+
+function QuestOfDay({ onTake }: { onTake: () => void }) {
+  return <AppCard style={styles.questOfDay}><View style={styles.dayTop}><Badge label="РљРІРµСЃС‚ РґРЅСЏ" tone="reward" /><Text style={styles.dayDeadline}>РґРѕ {questOfDay.deadline}</Text></View><Text numberOfLines={2} style={styles.dayTitle}>{questOfDay.title}</Text><View style={styles.dayMeta}><View style={styles.authorRow}><Avatar label={questOfDay.avatar} size={30} /><Text style={styles.authorText}>@{questOfDay.author}</Text></View><Text style={styles.dayReward}>{questOfDay.reward} РіСЂРЅ</Text></View><AppButton label="Р’Р·СЏС‚Рё РєРІРµСЃС‚" onPress={onTake} /></AppCard>;
 }
 
 const styles = StyleSheet.create({
-  dayCard: {
-    backgroundColor: 'rgba(124, 58, 255, 0.16)',
-    borderColor: 'rgba(196,255,0,0.28)',
-    borderRadius: radii.md,
-    borderWidth: 1,
-    gap: spacing.md,
-    padding: spacing.lg,
-  },
-  dayCopy: {
-    flex: 1,
-    gap: spacing.xxs,
-  },
-  dayEyebrow: {
-    ...typography.eyebrow,
-    color: questColors.acid,
-    textTransform: 'uppercase',
-  },
-  dayHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  dayTimer: {
-    ...typography.label,
-    color: questColors.textPrimary,
-  },
-  dayTitle: {
-    ...typography.titleCompact,
-    color: questColors.textPrimary,
-  },
-  header: {
-    gap: spacing.lg,
-  },
-  emptyCard: {
-    backgroundColor: questColors.surface,
-    borderColor: questColors.border,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    gap: spacing.xs,
-    padding: spacing.lg,
-  },
-  emptyText: {
-    ...typography.caption,
-    color: questColors.textSecondary,
-  },
-  emptyTitle: {
-    ...typography.subtitle,
-    color: questColors.textPrimary,
-  },
-  filterChip: {
-    backgroundColor: questColors.surface,
-    borderColor: questColors.border,
-    borderRadius: radii.xs,
-    borderWidth: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  filterChipActive: {
-    backgroundColor: 'rgba(196,255,0,0.14)',
-    borderColor: 'rgba(196,255,0,0.44)',
-  },
-  filterRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  filterText: {
-    ...typography.label,
-    color: questColors.textSecondary,
-  },
-  filterTextActive: {
-    color: questColors.acid,
-  },
-  heroTop: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    gap: spacing.lg,
-    justifyContent: 'space-between',
-  },
-  kicker: {
-    ...typography.eyebrow,
-    color: questColors.acid,
-    textTransform: 'uppercase',
-  },
-  listContent: {
-    gap: spacing.lg,
-    paddingBottom: 120,
-  },
-  qmSpinner: {
-    alignItems: 'center',
-    backgroundColor: questColors.surface,
-    borderColor: questColors.border,
-    borderRadius: radii.xs,
-    borderWidth: 1,
-    height: 48,
-    justifyContent: 'center',
-    width: 48,
-  },
-  qmText: {
-    ...typography.label,
-    color: questColors.textPrimary,
-  },
-  pressed: {
-    opacity: 0.72,
-  },
-  screenContent: {
-    flex: 1,
-    paddingBottom: 0,
-  },
-  searchInput: {
-    ...typography.body,
-    backgroundColor: questColors.surface,
-    borderColor: questColors.border,
-    borderRadius: radii.sm,
-    borderWidth: 1,
-    color: questColors.textPrimary,
-    minHeight: 52,
-    paddingHorizontal: spacing.md,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  title: {
-    ...typography.title,
-    color: questColors.textPrimary,
-  },
+  authorRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs }, authorText: { ...typography.captionStrong, color: colors.inkMuted },
+  category: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radii.pill, borderWidth: 1, flexDirection: 'row', gap: spacing.xs, minHeight: 40, paddingHorizontal: spacing.md }, categoryActive: { backgroundColor: colors.primarySoft, borderColor: colors.primary }, categoryIcon: { fontSize: 15 }, categoryRail: { gap: spacing.sm, paddingRight: spacing.lg }, categoryText: { ...typography.captionStrong, color: colors.inkMuted }, categoryTextActive: { color: colors.ink },
+  dayDeadline: { ...typography.captionStrong, color: colors.inkMuted }, dayMeta: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' }, dayReward: { ...typography.titleCompact, color: colors.accent }, dayTitle: { ...typography.subtitle, color: colors.ink }, dayTop: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  filter: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radii.pill, borderWidth: 1, minHeight: 36, paddingHorizontal: spacing.md, justifyContent: 'center' }, filterActive: { backgroundColor: colors.primary, borderColor: colors.primary }, filterRail: { gap: spacing.sm, paddingRight: spacing.lg }, filterText: { ...typography.captionStrong, color: colors.inkMuted }, filterTextActive: { color: colors.white },
+  greeting: { ...typography.caption, color: colors.inkMuted }, header: { gap: spacing.lg }, list: { gap: spacing.md, paddingBottom: 132, paddingHorizontal: spacing.lg, paddingTop: spacing.lg }, loading: { backgroundColor: colors.background, flex: 1, justifyContent: 'center', padding: spacing.lg },
+  name: { ...typography.subtitle, color: colors.ink }, profileAction: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: spacing.sm }, questOfDay: { backgroundColor: 'rgba(124,58,255,0.12)', borderColor: 'rgba(124,58,255,0.44)', gap: spacing.md },
+  recent: { gap: spacing.xs, marginTop: -spacing.sm }, recentChip: { backgroundColor: colors.surfaceMuted, borderRadius: radii.pill, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs }, recentItems: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }, recentLabel: { ...typography.caption, color: colors.inkSubtle }, recentText: { ...typography.captionStrong, color: colors.inkMuted }, screen: { backgroundColor: colors.background, flex: 1 },
+  topActions: { flexDirection: 'row', gap: spacing.xs }, topBar: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
 });

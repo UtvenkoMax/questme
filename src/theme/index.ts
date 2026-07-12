@@ -2,6 +2,8 @@ import { Platform, type ViewStyle } from 'react-native';
 
 import { questColors } from '@/constants/colors';
 export { radii, spacing } from '@/constants/spacing';
+export { control, opacity, zIndex } from '@/constants/spacing';
+export { motion } from '@/constants/animations';
 export { typography } from '@/constants/typography';
 
 type ShadowStyle = ViewStyle & {
